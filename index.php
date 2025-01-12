@@ -58,8 +58,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                         header("Location: admin/admin_page.php");
                         break;
                     case 'doctor':
-                        header("Location: doctor/doctor_dashboard.php");
+                        header("Location: doctor/doctor.php");
                         break;
+                        case 'user':
+                            header("Location: reception/reception.php");
+                            break;
                     case 'nurse':
                         header("Location: nurse/nurse_dashboard.php");
                         break;

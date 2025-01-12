@@ -137,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registerWorker'])) {
                     <option value="nurse">Nurse</option>
                     <option value="lab_technician">Lab Technician</option>
                     <option value="pharmacist">Pharmacist</option>
-                    <option value="user">User</option>
+                    <option value="user">reception</option>
                 </select>
             </div>
             <button type="submit" name="registerWorker">Register Worker</button>
