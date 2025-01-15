@@ -60,21 +60,128 @@ $bills = getBills($conn);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Billing and Payment Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        /* General styles */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
         }
-        th, td {
-            padding: 10px;
-            text-align: left;
-            border: 1px solid #ddd;
+
+        h1, h2 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
         }
-        th {
-            background-color: #f4f4f4;
-        }
+
         form {
-            margin: 20px 0;
+            max-width: 600px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        form label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        form input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        form input:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        form button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        form button:hover {
+            background-color: #218838;
+        }
+
+        a {
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Table styles */
+        table {
+            width: 90%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            background-color: #fff;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #007bff;
+            color: #fff;
+            font-size: 14px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        td {
+            font-size: 14px;
+            color: #555;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        td:last-child a {
+            margin-right: 10px;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            form {
+                padding: 15px;
+            }
+
+            table, th, td {
+                font-size: 12px;
+            }
+
+            form input, form button {
+                font-size: 14px;
+            }
         }
     </style>
 </head>
@@ -85,186 +192,19 @@ $bills = getBills($conn);
     <form method="POST" action="">
         <label for="patientID">Patient ID:</label>
         <input type="text" name="patientID" id="patientID" required><br>
+
         <label for="medicationName">Medication Name:</label>
         <input type="text" name="medicationName" id="medicationName" required><br>
+
         <label for="quantity">Quantity:</label>
         <input type="number" name="quantity" id="quantity" required><br>
+
         <label for="pricePerUnit">Price Per Unit:</label>
         <input type="number" step="0.01" name="pricePerUnit" id="pricePerUnit" required><br>
+
         <button type="submit" name="addBill">Add Bill</button>
+        <a href="bills_list.php">View Bills</a>
     </form>
 
-    <h2>Bills List</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Patient ID</th>
-                <th>Medication Name</th>
-                <th>Quantity</th>
-                <th>Price Per Unit</th>
-                <th>Total Amount</th>
-                <th>Payment Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (!empty($bills)): ?>
-                <?php foreach ($bills as $bill): ?>
-                    <tr>
-                        <td><?= $bill['billID']; ?></td>
-                        <td><?= $bill['patientID']; ?></td>
-                        <td><?= $bill['medicationName']; ?></td>
-                        <td><?= $bill['quantity']; ?></td>
-                        <td><?= $bill['pricePerUnit']; ?></td>
-                        <td><?= $bill['totalAmount']; ?></td>
-                        <td><?= $bill['paymentStatus']; ?></td>
-                        <td>
-                            <?php if ($bill['paymentStatus'] == "Pending"): ?>
-                                <a href="?pay=<?= $bill['billID']; ?>" 
-                                   onclick="return confirm('Are you sure you want to mark this bill as paid?');">Mark as Paid</a>
-                            <?php else: ?>
-                                Paid
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <tr>
-                    <td colspan="8">No bills found.</td>
-                </tr>
-            <?php endif; ?>
-        </tbody>
-    </table>
 </body>
-<style>
-    /* General styles */
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f9f9f9;
-    margin: 0;
-    padding: 0;
-}
-
-h1, h2 {
-    color: #333;
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-form {
-    max-width: 600px;
-    margin: 0 auto 40px;
-    background: #fff;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-form label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 8px;
-    color: #555;
-}
-
-form input {
-    width: calc(100% - 20px);
-    padding: 8px 10px;
-    margin-bottom: 20px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 16px;
-}
-
-form button {
-    display: block;
-    width: 100%;
-    padding: 10px;
-    background-color: #28a745;
-    color: #fff;
-    font-size: 16px;
-    font-weight: bold;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-form button:hover {
-    background-color: #218838;
-}
-
-/* Table styles */
-table {
-    width: 90%;
-    margin: 0 auto 40px;
-    border-collapse: collapse;
-    background-color: #fff;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border-radius: 5px;
-    overflow: hidden;
-}
-
-th, td {
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-}
-
-th {
-    background-color: #007bff;
-    color: #fff;
-    text-transform: uppercase;
-    font-size: 14px;
-    font-weight: bold;
-}
-
-td {
-    font-size: 14px;
-    color: #555;
-}
-
-tr:hover {
-    background-color: #f1f1f1;
-}
-
-a {
-    text-decoration: none;
-    color: #007bff;
-    font-weight: bold;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
-td:last-child a {
-    margin-right: 10px;
-}
-
-/* Alert styles */
-.alert {
-    width: 90%;
-    margin: 20px auto;
-    padding: 15px;
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-    border-radius: 5px;
-    font-size: 14px;
-    text-align: center;
-}
-
-/* Responsive styles */
-@media (max-width: 768px) {
-    table, th, td {
-        font-size: 12px;
-    }
-
-    form input, form button {
-        font-size: 14px;
-    }
-}
-
-</style>
 </html>

@@ -13,15 +13,14 @@ if ($conn->connect_error) {
 }
 
 // Fetch patients
-$patients_result = $conn->query("SELECT * FROM patients");
+$patients_result = $conn->query("SELECT patientID, first_name, last_name FROM patients");
 
 // Initialize messages
 $success_message = "";
 $error_message = "";
 
-// Handle form submission
+// Handle form submission (for adding a diagnosis)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_diagnosis'])) {
-    // Ensure patient_id is set from the form
     if (isset($_POST['patient_id']) && !empty($_POST['patient_id'])) {
         $patient_id = $_POST['patient_id'];
         $diagnosis = $_POST['diagnosis'];
@@ -29,7 +28,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_diagnosis'])) 
         $lab_tests = $_POST['lab_tests'];
         $created_at = date('Y-m-d H:i:s');
 
-        // Insert into patient_diagnosis
         $stmt = $conn->prepare("INSERT INTO patient_diagnosis (patient_id, diagnosis, medications, lab_tests, created_at) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("issss", $patient_id, $diagnosis, $medications, $lab_tests, $created_at);
 
@@ -42,17 +40,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_diagnosis'])) 
     }
 }
 
-// Fetch patient's medical history
+// Fetch medical history based on patient search
 $medical_history = [];
-if (isset($_GET['patient_id'])) {
-    $patient_id = $_GET['patient_id'];
+if (isset($_GET['patient_id']) && !empty($_GET['patient_id'])) {
+    $patient_id = (int)$_GET['patient_id'];
     $history_result = $conn->query("SELECT * FROM patient_diagnosis WHERE patient_id = $patient_id");
+
     while ($row = $history_result->fetch_assoc()) {
         $medical_history[] = $row;
     }
 }
-
-
 ?>
 
 <!DOCTYPE html>
@@ -80,14 +77,15 @@ if (isset($_GET['patient_id'])) {
         <div class="row">
             <!-- Left Side: Diagnosis Form -->
             <div class="col-md-6">
-                <!-- Diagnosis form -->
                 <form method="POST" action="">
                     <div class="form-group">
                         <label for="patient_id">Select Patient:</label>
                         <select class="form-control" id="patient_id" name="patient_id" required>
                             <option value="">-- Select Patient --</option>
                             <?php while ($patient = $patients_result->fetch_assoc()): ?>
-                                <option value="<?php echo $patient['id']; ?>"><?php echo $patient['id']; ?></option>
+                                <option value="<?php echo $patient['patientID']; ?>">
+                                    <?php echo $patient['first_name'] . ' ' . $patient['last_name']; ?>
+                                </option>
                             <?php endwhile; ?>
                         </select>
                     </div>
@@ -111,45 +109,27 @@ if (isset($_GET['patient_id'])) {
             <div class="col-md-6">
                 <h5>Patient Details</h5>
                 <div id="patient_details">
-                    <!-- Display Patient's Details (If Patient Exists) -->
-                    <?php if (!empty($medical_history)): ?>
-                        <h5>Medical History:</h5>
-                        <ul>
-                            <?php foreach ($medical_history as $history): ?>
-                                <li>
-                                    <strong>Diagnosis:</strong> <?php echo $history['diagnosis']; ?><br>
-                                    <strong>Medications:</strong> <?php echo $history['medications']; ?><br>
-                                    <strong>Lab Tests:</strong> <?php echo $history['lab_tests']; ?><br>
-                                    <strong>Date:</strong> <?php echo $history['created_at']; ?>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    <?php else: ?>
-                        <p>No medical history found.</p>
+                    <?php if (!empty($medical_history)): ?>   
                     <?php endif; ?>
                 </div>
 
-                <!-- Patient Search -->
+                <!-- Search Patient Form -->
                 <div class="form-group mt-4">
                     <label for="patient_name">Search Patient:</label>
                     <input type="text" class="form-control" id="patient_name" name="patient_name" placeholder="Type patient's name" onkeyup="searchPatient()">
-                    <input type="hidden" id="patient_id" name="patient_id">
+                    <input type="hidden" id="selected_patient_id" name="selected_patient_id">
                     <div id="patient_results"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Close database connection -->
-    <?php $conn->close(); ?>
-
     <script>
-        // JavaScript to search for patient and show medical history
         function searchPatient() {
             var patient_name = $('#patient_name').val();
-            if (patient_name.length > 2) { // Start searching after 3 characters
+            if (patient_name.length > 2) {
                 $.ajax({
-                    url: "search_patient.php", // This file will handle search and return patient results
+                    url: "search_patient.php",  // This should be a separate PHP file for searching patients
                     method: "GET",
                     data: { patient_name: patient_name },
                     success: function(response) {
@@ -161,24 +141,13 @@ if (isset($_GET['patient_id'])) {
             }
         }
 
-        // JavaScript to handle patient selection and populate the hidden input field
         function selectPatient(patient_id, patient_name) {
             $('#patient_name').val(patient_name);
-            $('#patient_id').val(patient_id);
-            $('#patient_results').empty(); // Hide the results after selection
-            fetchPatientDetails(patient_id); // Fetch and display patient details
-        }
+            $('#selected_patient_id').val(patient_id);
+            $('#patient_results').empty();
 
-        // Function to fetch and display patient details
-        function fetchPatientDetails(patient_id) {
-            $.ajax({
-                url: "fetch_patient_details.php", // This file will return the patient's details and medical history
-                method: "GET",
-                data: { patient_id: patient_id },
-                success: function(response) {
-                    $('#patient_details').html(response);
-                }
-            });
+            // Optionally, you could trigger fetching additional details for the patient here.
+            window.location.href = `patient_diagnosis.php?patient_id=${patient_id}`;
         }
     </script>
 </body>

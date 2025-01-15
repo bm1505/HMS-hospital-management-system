@@ -27,10 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['book_appointment'])) 
     $appointment_time = $_POST['appointment_time'];
 
     // Insert the appointment into the appointments table
-    $insert_sql = "INSERT INTO appointments (patient_name, doctor_id, appointment_date, appointment_time) 
+    $insert_sql = "INSERT INTO appointments (patient_name, doctorID, appointment_date, appointment_time) 
                    VALUES (?, ?, ?, ?)";
     $insert_stmt = $conn->prepare($insert_sql);
-    $insert_stmt->bind_param("ssss", $patient_name, $doctor_id, $appointment_date, $appointment_time);
+    $insert_stmt->bind_param("ssss", $patient_name, $doctorID, $appointment_date, $appointment_time);
     
     if ($insert_stmt->execute()) {
         $success_message = "Appointment booked successfully!";
@@ -93,7 +93,7 @@ $conn->close();
 
             <div class="form-group">
                 <label for="doctor">Select Doctor</label>
-                <select name="doctor_id" id="doctor" class="form-control" required>
+                <select name="doctorID" id="doctor" class="form-control" required>
                     <option value="">Choose a doctor</option>
                     <?php while ($doctor = $doctors_result->fetch_assoc()): ?>
                         <option value="<?php echo $doctor['doctorID']; ?>"><?php echo $doctor['firstName'] . " " . $doctor['surname'] . " (" . $doctor['specialization'] . ")"; ?></option>

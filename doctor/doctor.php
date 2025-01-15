@@ -39,7 +39,7 @@
         .icon {
             font-size: 3rem;
             margin-bottom: 1rem;
-            color: #007bff;
+            color: green;
         }
         .footer {
             background-color: #343a40;
@@ -53,7 +53,7 @@
         }
         .navbar-text {
             font-size: 1rem;
-            color: white;
+            color: black;
         }
         .notifications {
             position: relative;
@@ -63,8 +63,8 @@
             position: absolute;
             top: -5px;
             right: -10px;
-            background: red;
-            color: white;
+            background: white;
+            color: black;
             font-size: 0.8rem;
             border-radius: 50%;
             padding: 3px 7px;

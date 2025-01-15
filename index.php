@@ -53,6 +53,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $_SESSION['username'] = $row['username'];
                 $_SESSION['role'] = $row['role'];
 
+                // Store nurseID in session if the user is a nurse
+                if ($row['role'] == 'nurse') {
+                    $_SESSION['nurseID'] = $row['id'];  // Store the nurse ID in the session
+                }
+
+                // Redirect based on role
                 switch ($row['role']) {
                     case 'admin':
                         header("Location: admin/admin_page.php");
@@ -60,9 +66,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     case 'doctor':
                         header("Location: doctor/doctor.php");
                         break;
-                        case 'user':
-                            header("Location: reception/reception.php");
-                            break;
+                    case 'user':
+                        header("Location: reception/reception.php");
+                        break;
                     case 'nurse':
                         header("Location: nurse/nurse_dashboard.php");
                         break;

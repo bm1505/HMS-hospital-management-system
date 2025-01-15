@@ -2,6 +2,13 @@
 // Start session and include database connection
 session_start();
 
+// Ensure the session is started
+if (!isset($_SESSION['nurseID'])) {
+    // Redirect to login page if nurse is not logged in
+    header("Location: index.php");
+    exit();
+}
+
 $servername = "localhost";
 $db_username = "root";
 $db_password = "";
@@ -22,9 +29,17 @@ $message = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['send_to_nurse'])) {
         $patientID = $_POST['patientID'];
+        $nurseID = $_SESSION['nurseID'];  // Assume nurse ID is stored in session
+
         // Update patient status to "under treatment"
         $stmt = $conn->prepare("UPDATE patients SET status = 'under treatment' WHERE patientID = ?");
         $stmt->bind_param("i", $patientID);
+        $stmt->execute();
+        $stmt->close();
+
+        // Insert record into patient_treatment table
+        $stmt = $conn->prepare("INSERT INTO patient_treatment (patientID, status, sent_to_nurse, nurseID) VALUES (?, 'under treatment', NOW(), ?)");
+        $stmt->bind_param("ii", $patientID, $nurseID);
         $stmt->execute();
         $stmt->close();
     } elseif (isset($_POST['remove_patient'])) {
@@ -53,10 +68,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $insurance_number = $_POST['insurance_number'];
         $emergency_contact = $_POST['emergency_contact'];
         $relationship = $_POST['relationship'];
+        $doctor_type = $_POST['doctor_type'];  // Get doctor type from form
 
         // Insert patient into database
-        $stmt = $conn->prepare("INSERT INTO patients (first_name, last_name, dateOfBirth, gender, phone, email, address, insurance_number, emergency_contact, relationship, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'waiting')");
-        $stmt->bind_param("ssssssssss", $first_name, $last_name, $dateOfBirth, $gender, $phone, $email, $address, $insurance_number, $emergency_contact, $relationship);
+        $stmt = $conn->prepare("INSERT INTO patients (first_name, last_name, dateOfBirth, gender, phone, email, address, insurance_number, emergency_contact, relationship, status, doctor_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'waiting', ?)");
+        $stmt->bind_param("sssssssssss", $first_name, $last_name, $dateOfBirth, $gender, $phone, $email, $address, $insurance_number, $emergency_contact, $relationship, $doctor_type);
         if ($stmt->execute()) {
             $message = "<div class='alert'>Patient successfully registered!</div>";
         } else {
@@ -77,28 +93,6 @@ $waitingPatients = $conn->query("SELECT * FROM patients WHERE status='waiting'")
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Patient Registration - St. Norbert Hospital</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-   <!-- Add this part after the form, where you want the buttons to appear -->
-   <!-- Navbar -->
-   <nav class="navbar navbar-expand-lg navbar-dark" style="display: flex; justify-content: space-between; align-items: center;">
-        <div class="btn-container" style="display: flex; justify-content: flex-start; align-items: center;">
-            <a href="reception.php" class="btn btn-primary" style="padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: all 0.3s ease; background-color: yellow; color: black; text-decoration: none; display: inline-block;">Back</a>
-        </div>
-        <div class="btn-container" style="display: flex; justify-content: flex-end; align-items: center;">
-            <a href="../index.php" class="btn btn-danger" style="padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: all 0.3s ease; background-color: #e74c3c; color: white; text-decoration: none; display: inline-block;">Logout</a>
-        </div>
-    </nav>
-    <style>
-        /* Optional: Adding custom styles for navbar and buttons */
-        .navbar {
-            background-color: #3498db; /* Blue background */
-            padding: 10px;
-        }
-        .navbar .btn {
-            margin: 0 5px; /* Space between buttons */
-        }
-    </style>
-
-
     <style>
         body {
             background-color: #f0f4f8;
@@ -156,66 +150,37 @@ $waitingPatients = $conn->query("SELECT * FROM patients WHERE status='waiting'")
             overflow-x: auto;
             margin-top: 30px;
         }
-/* General Button Styles */
-.btn {
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    display: inline-block;
-    border: none;
-}
-
-/* Primary Button (Send to Nurse) */
-.btn-primary {
-    background-color: #3498db;
-    color: white;
-}
-.btn-primary:hover {
-    background-color: #2980b9;
-    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
-}
-
-/* Danger Button (Remove) */
-.btn-danger {
-    background-color: #e74c3c;
-    color: white;
-}
-.btn-danger:hover {
-    background-color: #c0392b;
-    box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
-}
-
-/* Small Button Styling */
-.btn-sm {
-    padding: 8px 16px;
-    font-size: 12px;
-    border-radius: 6px;
-}
-
-/* Focused Button Effect */
-.btn:focus, .btn:active {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.5);
-}
 
         .btn {
-            background-color: #2ecc71;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+            border: none;
         }
 
-        .btn:hover {
-            background-color: #27ae60;
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+            box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
         }
 
         .footer {
@@ -234,7 +199,6 @@ $waitingPatients = $conn->query("SELECT * FROM patients WHERE status='waiting'")
         footer a:hover {
             text-decoration: underline;
         }
-
     </style>
 </head>
 <body>
@@ -296,61 +260,73 @@ $waitingPatients = $conn->query("SELECT * FROM patients WHERE status='waiting'")
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="relationship" class="form-label">Relationship to Emergency Contact</label>
+                        <label for="relationship" class="form-label">Relationship with Emergency Contact</label>
                         <input type="text" class="form-control" id="relationship" name="relationship">
                     </div>
-                    <div class="text-center">
-                       
-                    <button type="submit" name="register_patient" class="btn btn-primary">Register Patient</button>
-                    <br>
-                    
-                    <br>
-                    <button type="button" class="btn btn-lg btn-info" onclick="window.location.href='viewpatient.php'" style="display: block; margin: 0 auto; text-align: center;">
-    <i class="bi bi-eye"></i> View All Registered Patients
-</button>
-
+                    <div class="mb-3">
+                        <label for="doctor_type" class="form-label">Doctor Type *</label>
+                        <select class="form-select" id="doctor_type" name="doctor_type" required>
+                            <option value="" disabled selected>Select Doctor Type</option>
+                            <option value="General Practitioner">General Practitioner</option>
+                            <option value="Specialist">Specialist</option>
+                            <option value="Surgeon">Surgeon</option>
+                            <option value="Pediatrician">Pediatrician</option>
+                        </select>
                     </div>
-
+                    <button type="submit" name="register_patient" class="btn btn-primary w-100">Register Patient</button>
                 </form>
             </div>
-       
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
-            <!-- Right Side: Registered Patients List -->
+            <!-- Right Side: Patients Waiting for Treatment -->
             <div class="col-md-6 right-column">
-                <h1 class="text-center">Waiting Patients</h1>
+                <h1 class="text-center">Patients Waiting for Treatment</h1>
                 <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Status</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Date of Birth</th>
+                            <th>Doctor Type</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php while ($row = $waitingPatients->fetch_assoc()) { ?>
-                            <tr>
-                                <td><?= $row['patientID'] ?></td>
-                                <td><?= $row['first_name'] . ' ' . $row['last_name'] ?></td>
-                                <td><?= $row['status'] ?></td>
-                                <td>
-                                    <form method="POST" action="">
-                                        <input type="hidden" name="patientID" value="<?= $row['patientID'] ?>">
-                                        <button type="submit" name="send_to_nurse" class="btn btn-primary btn-sm">Send to Nurse</button>
-                                        <button type="submit" name="remove_patient" class="btn btn-danger btn-sm">Remove</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        <?php } ?>
+                        <?php
+                        if ($waitingPatients->num_rows > 0) {
+                            while ($patient = $waitingPatients->fetch_assoc()) {
+                                echo "<tr>";
+                                echo "<td>" . htmlspecialchars($patient['first_name']) . "</td>";
+                                echo "<td>" . htmlspecialchars($patient['last_name']) . "</td>";
+                                echo "<td>" . htmlspecialchars($patient['dateOfBirth']) . "</td>";
+                                echo "<td>" . htmlspecialchars($patient['doctor_type']) . "</td>";
+                                echo "<td>
+                                        <form method='POST' style='display:inline;'>
+                                            <input type='hidden' name='patientID' value='" . $patient['patientID'] . "'>
+                                            <button type='submit' name='send_to_nurse' class='btn btn-primary'>Send to Nurse</button>
+                                        </form>
+                                        <form method='POST' style='display:inline;'>
+                                            <input type='hidden' name='patientID' value='" . $patient['patientID'] . "'>
+                                            <button type='submit' name='remove_patient' class='btn btn-danger'>Remove</button>
+                                        </form>
+                                      </td>";
+                                echo "</tr>";
+                            }
+                        } else {
+                            echo "<tr><td colspan='5' class='text-center'>No patients waiting.</td></tr>";
+                        }
+                        ?>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-    <br>
-    <br>
-    
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>&copy; 2025 St. Norbert Hospital. All Rights Reserved.</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
 

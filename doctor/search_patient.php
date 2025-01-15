@@ -17,7 +17,7 @@ if (isset($_GET['patient_name']) && !empty($_GET['patient_name'])) {
     $patient_name = $_GET['patient_name'];
 
     // Search for patients by first name or last name
-    $query = $conn->prepare("SELECT patientID, firstName, lastName FROM patients WHERE firstName LIKE ? OR lastName LIKE ?");
+    $query = $conn->prepare("SELECT patientID, first_name, last_name FROM patients WHERE first_name LIKE ? OR last_name LIKE ?");
     $search_param = "%" . $patient_name . "%";
     $query->bind_param("ss", $search_param, $search_param);
     $query->execute();
@@ -36,7 +36,7 @@ if (isset($_GET['patient_name']) && !empty($_GET['patient_name'])) {
             }
 
             // Display patient's info and medical history in a table
-            echo "<h5>Medical History for Patient: {$patient['firstName']} {$patient['lastName']}</h5>";
+            echo "<h5>Medical History for Patient: {$patient['first_name']} {$patient['last_name']}</h5>";
             echo "<table class='table table-bordered'>";
             echo "<thead><tr><th>Diagnosis</th><th>Medications</th><th>Lab Tests</th><th>Date</th></tr></thead>";
             echo "<tbody>";
@@ -61,7 +61,7 @@ if (isset($_GET['patient_name']) && !empty($_GET['patient_name'])) {
 // Handle dynamic patient search (AJAX request)
 if (isset($_GET['patient_name']) && !empty($_GET['patient_name'])) {
     $patient_name = $_GET['patient_name'];
-    $stmt = $conn->prepare("SELECT patientID, firstName, lastName FROM patients WHERE firstName LIKE ? OR lastName LIKE ?");
+    $stmt = $conn->prepare("SELECT patientID, first_name, last_name FROM patients WHERE first_name LIKE ? OR last_name LIKE ?");
     $search_param = "%" . $patient_name . "%";
     $stmt->bind_param("ss", $search_param, $search_param);
     $stmt->execute();
@@ -70,7 +70,7 @@ if (isset($_GET['patient_name']) && !empty($_GET['patient_name'])) {
     // Fetch and return results
     if ($result->num_rows > 0) {
         while ($row = $result->fetch_assoc()) {
-            echo "<div class='patient-item' onclick='selectPatient(" . $row['patientID'] . ", \"" . $row['firstName'] . " " . $row['lastName'] . "\")'>" . $row['firstName'] . " " . $row['lastName'] . "</div>";
+            echo "<div class='patient-item' onclick='selectPatient(" . $row['patientID'] . ", \"" . $row['first_name'] . " " . $row['last_name'] . "\")'>" . $row['first_name'] . " " . $row['last_name'] . "</div>";
         }
     } else {
         echo "<p>No patients found.</p>";
