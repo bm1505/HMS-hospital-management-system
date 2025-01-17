@@ -1,5 +1,10 @@
 <?php
 session_start();
+if (!isset($_SESSION['nurseID'])) {
+    // Redirect to login page if nurse is not logged in
+    header("Location: index.php");
+    exit();
+}
 
 $servername = "localhost";
 $db_username = "root";

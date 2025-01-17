@@ -13,7 +13,7 @@ if ($conn->connect_error) {
 }
 
 // Fetch patients
-$patients_result = $conn->query("SELECT patientID, first_name, last_name FROM patients");
+$patients_result = $conn->query("SELECT patientID, first_name, last_name, dateOfBirth, gender, phone, insurance_number, emergency_contact FROM patients");
 
 // Initialize messages
 $success_message = "";
@@ -58,11 +58,24 @@ if (isset($_GET['patient_id']) && !empty($_GET['patient_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Patient Diagnosis</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container {
+            margin-top: 50px;
+        }
+        .alert {
+            margin-top: 20px;
+        }
+        table th, table td {
+            text-align: center;
+        }
+        .form-group label {
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-    <div class="container mt-5">
+    <div class="container">
         <h3>Patient Diagnosis</h3>
         <p>Record a diagnosis, prescribe medications, and order laboratory tests for a patient.</p>
 
@@ -108,47 +121,55 @@ if (isset($_GET['patient_id']) && !empty($_GET['patient_id'])) {
             <!-- Right Side: Patient Details and Medical History -->
             <div class="col-md-6">
                 <h5>Patient Details</h5>
-                <div id="patient_details">
-                    <?php if (!empty($medical_history)): ?>   
-                    <?php endif; ?>
-                </div>
-
-                <!-- Search Patient Form -->
-                <div class="form-group mt-4">
-                    <label for="patient_name">Search Patient:</label>
-                    <input type="text" class="form-control" id="patient_name" name="patient_name" placeholder="Type patient's name" onkeyup="searchPatient()">
-                    <input type="hidden" id="selected_patient_id" name="selected_patient_id">
-                    <div id="patient_results"></div>
-                </div>
+                <?php if (!empty($medical_history)): ?>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Patient ID</th>
+                                <th>Patient Name</th>
+                                <th>Date of Birth</th>
+                                <th>Gender</th>
+                                <th>Phone</th>
+                                <th>Insurance</th>
+                                <th>Emergency Contact</th>
+                                <th>Weight (kg)</th>
+                                <th>Blood Pressure</th>
+                                <th>Temperature (°C)</th>
+                                <th>Height (cm)</th>
+                                <th>Notes</th>
+                                <th>Doctor Type</th>
+                                <th>Doctor Assigned</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($medical_history as $record): ?>
+                                <tr>
+                                    <td><?php echo $record['patient_id']; ?></td>
+                                    <td><?php echo $record['patient_name']; ?></td>
+                                    <td><?php echo $record['dateOfBirth']; ?></td>
+                                    <td><?php echo $record['gender']; ?></td>
+                                    <td><?php echo $record['phone']; ?></td>
+                                    <td><?php echo $record['insurance_number']; ?></td>
+                                    <td><?php echo $record['emergency_contact']; ?></td>
+                                    <td><?php echo $record['weight']; ?></td>
+                                    <td><?php echo $record['blood_pressure']; ?></td>
+                                    <td><?php echo $record['temperature']; ?></td>
+                                    <td><?php echo $record['height']; ?></td>
+                                    <td><?php echo $record['other_notes']; ?></td>
+                                    <td><?php echo $record['doctor_type']; ?></td>
+                                    <td><?php echo $record['doctor_assigned']; ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php else: ?>
+                    <p>No medical history found for this patient.</p>
+                <?php endif; ?>
             </div>
         </div>
     </div>
 
-    <script>
-        function searchPatient() {
-            var patient_name = $('#patient_name').val();
-            if (patient_name.length > 2) {
-                $.ajax({
-                    url: "search_patient.php",  // This should be a separate PHP file for searching patients
-                    method: "GET",
-                    data: { patient_name: patient_name },
-                    success: function(response) {
-                        $('#patient_results').html(response);
-                    }
-                });
-            } else {
-                $('#patient_results').empty();
-            }
-        }
-
-        function selectPatient(patient_id, patient_name) {
-            $('#patient_name').val(patient_name);
-            $('#selected_patient_id').val(patient_id);
-            $('#patient_results').empty();
-
-            // Optionally, you could trigger fetching additional details for the patient here.
-            window.location.href = `patient_diagnosis.php?patient_id=${patient_id}`;
-        }
-    </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

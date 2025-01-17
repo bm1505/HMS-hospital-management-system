@@ -30,10 +30,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $doctor_type = $_POST['doctor_type'];
 
     $stmt = $conn->prepare("
-        INSERT INTO patient_vitals (patientID, weight, blood_pressure, temperature, height, other_notes, dateOfBirth, gender, phone, email, address, insurance_number, emergency_contact, doctor_type)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ");
-    $stmt->bind_param("iddsdsissssss", $patientID, $weight, $blood_pressure, $temperature, $height, $other_notes, $dateOfBirth, $gender, $phone, $email, $address, $insurance_number, $emergency_contact, $$doctor_type);
+    INSERT INTO patient_vitals 
+    (patientID, weight, blood_pressure, temperature, height, other_notes, dateOfBirth, gender, phone, email, address, insurance_number, emergency_contact, doctor_type) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+");
+
+    $stmt->bind_param("iddsdsisssssss", 
+    $patientID, $weight, $blood_pressure, $temperature, $height, 
+    $other_notes, $dateOfBirth, $gender, $phone, $email, 
+    $address, $insurance_number, $emergency_contact, $doctor_type
+);
+
 
     if ($stmt->execute()) {
         $message = "Patient vitals and personal information recorded successfully!";
@@ -121,6 +128,13 @@ if (isset($_GET['patientID'])) {
 </head>
 <body>
 <div class="container">
+<div class="d-flex justify-content-between">
+        <!-- Back Button -->
+        <a href="nurse_dashboard.php" class="btn btn-secondary">Back</a>
+        
+        <!-- Logout Button -->
+        <a href="index.php" class="btn btn-danger">Logout</a>
+    </div>
     <h1 class="text-center mb-4">Nurse Dashboard - Record Patient Vitals</h1>
     <hr>
 

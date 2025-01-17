@@ -3,11 +3,6 @@
 session_start();
 
 // Ensure the session is started
-if (!isset($_SESSION['nurseID'])) {
-    // Redirect to login page if nurse is not logged in
-    header("Location: index.php");
-    exit();
-}
 
 $servername = "localhost";
 $db_username = "root";
@@ -207,7 +202,7 @@ $waitingPatients = $conn->query("SELECT * FROM patients WHERE status='waiting'")
             <!-- Left Side: Patient Registration Form -->
             <div class="col-md-6 left-column">
                 <h1 class="text-center">Patient Registration</h1>
-                <p class="text-center text-muted"><marquee behavior="slow" direction="left">Fill the form to register a new patient.</marquee></p>
+                <p class="text-center text-muted"><marquee behavior="slow" direction="left"  >Fill the form to register a new patient.</marquee></p>
                 <?= $message ?>
                 <form method="POST" action="">
                     <div class="row mb-3">
@@ -267,10 +262,10 @@ $waitingPatients = $conn->query("SELECT * FROM patients WHERE status='waiting'")
                         <label for="doctor_type" class="form-label">Doctor Type *</label>
                         <select class="form-select" id="doctor_type" name="doctor_type" required>
                             <option value="" disabled selected>Select Doctor Type</option>
-                            <option value="General Practitioner">General Practitioner</option>
-                            <option value="Specialist">Specialist</option>
-                            <option value="Surgeon">Surgeon</option>
-                            <option value="Pediatrician">Pediatrician</option>
+                            <option value="born">born</option>
+                            <option value="normal">normal</option>
+                            <option value="heart">heart</option>
+                            <option value="skin">skin</option>
                         </select>
                     </div>
                     <button type="submit" name="register_patient" class="btn btn-primary w-100">Register Patient</button>
