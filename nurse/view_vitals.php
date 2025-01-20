@@ -66,7 +66,7 @@ if (isset($_POST['assign_doctor']) && isset($_POST['doctorID']) && isset($_POST[
      $temperature,
      $height,
      $doctor_type,
-     $other_notes
+     $other_notes,
  );
 
  // Execute the query
@@ -151,7 +151,7 @@ if ($doctor_result && $doctor_result->num_rows > 0) {
 <div class="container mt-4">
     <div class="d-flex justify-content-between">
         <a href="nurse_dashboard.php" class="btn btn-outline-primary">Back</a>
-        <a href="index.php" class="btn btn-outline-danger">Logout</a>
+        <a href="../logout.php" class="btn btn-outline-danger">Logout</a>
     </div>
 
     <h1 class="text-center mt-4 mb-4">Patient Vitals</h1>

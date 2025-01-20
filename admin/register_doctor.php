@@ -42,11 +42,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registerDoctor'])) {
                 throw new Exception("Doctor registration failed: " . $conn->error);
             }
 
-            // Insert into users table
+            // Get the last inserted doctor ID
+            $doctorID = $conn->insert_id;
+
+            // Insert into users table with the doctorID as foreign key
             $sql_user = "INSERT INTO users (username, password, role) 
                          VALUES ('$username', '$hashed_password', 'doctor')";
             if (!$conn->query($sql_user)) {
                 throw new Exception("User registration failed: " . $conn->error);
+            }
+
+            // After inserting the user, link the doctorID in the users table
+            $sql_update_user = "UPDATE users SET doctorID = $doctorID WHERE username = '$username'";
+            if (!$conn->query($sql_update_user)) {
+                throw new Exception("Failed to link doctor with user: " . $conn->error);
             }
 
             $conn->commit();

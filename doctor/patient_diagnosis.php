@@ -1,10 +1,20 @@
 <?php
-// Database connection
+session_start(); // Start the session to access the logged-in doctorID
+
+// Check if the doctorID exists in the session
+if (!isset($_SESSION['doctorID'])) {
+    die("Error: You must be logged in to view this page.");
+}
+
+// Assuming the doctor’s ID is stored in the session
+$doctorID = $_SESSION['doctorID'];
+
 $servername = "localhost";
 $db_username = "root";
 $db_password = "";
 $dbname = "st_norbert_hospital";
 
+// Create a connection to the database
 $conn = new mysqli($servername, $db_username, $db_password, $dbname);
 
 // Check connection
@@ -12,44 +22,31 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Fetch patients
-$patients_result = $conn->query("SELECT patientID, first_name, last_name, dateOfBirth, gender, phone, insurance_number, emergency_contact FROM patients");
+// Fetch patient details assigned to the logged-in doctor
+$patient_query = "SELECT a.assignmentID, p.patientID, p.first_name, p.last_name, p.dateOfBirth, p.gender, p.phone, p.email, 
+                         p.insurance_number, a.date_assigned, p.emergency_contact, p.weight, p.blood_pressure, p.temperature, 
+                         p.height, p.doctor_type, p.other_notes
+                  FROM doctor_assignments a
+                  JOIN patients p ON a.patientID = p.patientID
+                  WHERE a.doctorID = ?";
+$stmt = $conn->prepare($patient_query);
 
-// Initialize messages
-$success_message = "";
-$error_message = "";
-
-// Handle form submission (for adding a diagnosis)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_diagnosis'])) {
-    if (isset($_POST['patient_id']) && !empty($_POST['patient_id'])) {
-        $patient_id = $_POST['patient_id'];
-        $diagnosis = $_POST['diagnosis'];
-        $medications = $_POST['medications'];
-        $lab_tests = $_POST['lab_tests'];
-        $created_at = date('Y-m-d H:i:s');
-
-        $stmt = $conn->prepare("INSERT INTO patient_diagnosis (patient_id, diagnosis, medications, lab_tests, created_at) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("issss", $patient_id, $diagnosis, $medications, $lab_tests, $created_at);
-
-        if ($stmt->execute()) {
-            $success_message = "Diagnosis recorded successfully.";
-        } else {
-            $error_message = "Error recording diagnosis: " . $stmt->error;
-        }
-        $stmt->close();
-    }
+if ($stmt === false) {
+    die("Error in SQL query preparation: " . $conn->error);
 }
 
-// Fetch medical history based on patient search
-$medical_history = [];
-if (isset($_GET['patient_id']) && !empty($_GET['patient_id'])) {
-    $patient_id = (int)$_GET['patient_id'];
-    $history_result = $conn->query("SELECT * FROM patient_diagnosis WHERE patient_id = $patient_id");
+$stmt->bind_param("i", $doctorID);
+$stmt->execute();
+$patient_result = $stmt->get_result();
 
-    while ($row = $history_result->fetch_assoc()) {
-        $medical_history[] = $row;
+$patients = [];
+if ($patient_result && $patient_result->num_rows > 0) {
+    while ($row = $patient_result->fetch_assoc()) {
+        $patients[] = $row;
     }
 }
+$stmt->close();
+$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -57,119 +54,80 @@ if (isset($_GET['patient_id']) && !empty($_GET['patient_id'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patient Diagnosis</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>View Assigned Patients</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
     <style>
-        .container {
-            margin-top: 50px;
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f5f7;
         }
-        .alert {
-            margin-top: 20px;
+        h1 {
+            font-weight: 600;
+            color: #007bff;
         }
-        table th, table td {
-            text-align: center;
+        .card {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
         }
-        .form-group label {
-            font-weight: bold;
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h3>Patient Diagnosis</h3>
-        <p>Record a diagnosis, prescribe medications, and order laboratory tests for a patient.</p>
+<div class="container mt-4">
+    <h1 class="text-center mt-4 mb-4">Assigned Patients</h1>
+    <hr>
 
-        <!-- Display messages -->
-        <?php if ($success_message): ?>
-            <div class="alert alert-success"><?php echo $success_message; ?></div>
+    <div class="card p-4 mt-4">
+        <h4 class="mb-3">Patient List</h4>
+        <?php if (empty($patients)): ?>
+            <p>No patients assigned to you.</p>
+        <?php else: ?>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Patient Name</th>
+                        <th>Date of Birth</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>Insurance Number</th>
+                        <th>Date Assigned</th>
+                        <th>Emergency Contact</th>
+                        <th>Weight</th>
+                        <th>Blood Pressure</th>
+                        <th>Temperature</th>
+                        <th>Height</th>
+                        <th>Doctor Type</th>
+                        <th>Other Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($patients as $patient): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($patient['first_name'] . ' ' . $patient['last_name']) ?></td>
+                            <td><?= htmlspecialchars($patient['dateOfBirth']) ?></td>
+                            <td><?= htmlspecialchars($patient['phone']) ?></td>
+                            <td><?= htmlspecialchars($patient['email']) ?></td>
+                            <td><?= htmlspecialchars($patient['insurance_number']) ?></td>
+                            <td><?= htmlspecialchars($patient['date_assigned']) ?></td>
+                            <td><?= htmlspecialchars($patient['emergency_contact']) ?></td>
+                            <td><?= htmlspecialchars($patient['weight']) ?></td>
+                            <td><?= htmlspecialchars($patient['blood_pressure']) ?></td>
+                            <td><?= htmlspecialchars($patient['temperature']) ?></td>
+                            <td><?= htmlspecialchars($patient['height']) ?></td>
+                            <td><?= htmlspecialchars($patient['doctor_type']) ?></td>
+                            <td><?= htmlspecialchars($patient['other_notes']) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         <?php endif; ?>
-        <?php if ($error_message): ?>
-            <div class="alert alert-danger"><?php echo $error_message; ?></div>
-        <?php endif; ?>
-
-        <div class="row">
-            <!-- Left Side: Diagnosis Form -->
-            <div class="col-md-6">
-                <form method="POST" action="">
-                    <div class="form-group">
-                        <label for="patient_id">Select Patient:</label>
-                        <select class="form-control" id="patient_id" name="patient_id" required>
-                            <option value="">-- Select Patient --</option>
-                            <?php while ($patient = $patients_result->fetch_assoc()): ?>
-                                <option value="<?php echo $patient['patientID']; ?>">
-                                    <?php echo $patient['first_name'] . ' ' . $patient['last_name']; ?>
-                                </option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="diagnosis">Diagnosis:</label>
-                        <textarea class="form-control" id="diagnosis" name="diagnosis" rows="3" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="medications">Medications:</label>
-                        <textarea class="form-control" id="medications" name="medications" rows="2" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="lab_tests">Lab Tests:</label>
-                        <textarea class="form-control" id="lab_tests" name="lab_tests" rows="2" required></textarea>
-                    </div>
-                    <button type="submit" name="submit_diagnosis" class="btn btn-primary">Submit Diagnosis</button>
-                </form>
-            </div>
-
-            <!-- Right Side: Patient Details and Medical History -->
-            <div class="col-md-6">
-                <h5>Patient Details</h5>
-                <?php if (!empty($medical_history)): ?>
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Patient ID</th>
-                                <th>Patient Name</th>
-                                <th>Date of Birth</th>
-                                <th>Gender</th>
-                                <th>Phone</th>
-                                <th>Insurance</th>
-                                <th>Emergency Contact</th>
-                                <th>Weight (kg)</th>
-                                <th>Blood Pressure</th>
-                                <th>Temperature (°C)</th>
-                                <th>Height (cm)</th>
-                                <th>Notes</th>
-                                <th>Doctor Type</th>
-                                <th>Doctor Assigned</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($medical_history as $record): ?>
-                                <tr>
-                                    <td><?php echo $record['patient_id']; ?></td>
-                                    <td><?php echo $record['patient_name']; ?></td>
-                                    <td><?php echo $record['dateOfBirth']; ?></td>
-                                    <td><?php echo $record['gender']; ?></td>
-                                    <td><?php echo $record['phone']; ?></td>
-                                    <td><?php echo $record['insurance_number']; ?></td>
-                                    <td><?php echo $record['emergency_contact']; ?></td>
-                                    <td><?php echo $record['weight']; ?></td>
-                                    <td><?php echo $record['blood_pressure']; ?></td>
-                                    <td><?php echo $record['temperature']; ?></td>
-                                    <td><?php echo $record['height']; ?></td>
-                                    <td><?php echo $record['other_notes']; ?></td>
-                                    <td><?php echo $record['doctor_type']; ?></td>
-                                    <td><?php echo $record['doctor_assigned']; ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php else: ?>
-                    <p>No medical history found for this patient.</p>
-                <?php endif; ?>
-            </div>
-        </div>
     </div>
+</div>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -131,6 +131,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 </head>
 <body>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between">
+        <a href="view_vitals.php" class="btn btn-outline-primary">Vitals</a>
+        <a href="../logout.php" class="btn btn-outline-danger">Logout</a>
+    </div>
+
 <div class="container">
     <h1>Nurse Dashboard</h1>
     <hr>

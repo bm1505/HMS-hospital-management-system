@@ -1,9 +1,8 @@
 <?php
-// Start session and include database connection
+// Start the session
 session_start();
 
-// Ensure the session is started
-
+// Database credentials
 $servername = "localhost";
 $db_username = "root";
 $db_password = "";
@@ -12,49 +11,71 @@ $dbname = "st_norbert_hospital";
 // Create a database connection
 $conn = new mysqli($servername, $db_username, $db_password, $dbname);
 
-// Check the connection
+// Check database connection
 if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+    die("Database connection failed: " . $conn->connect_error);
 }
 
-// Initialize variables for messages
+// Ensure nurseID is set in the session
+if (!isset($_SESSION['nurseID'])) {
+    die("Error: You must log in to access this page.");
+}
+$nurseID = $_SESSION['nurseID'];
+
+// Fetch the role of the logged-in user
+$stmt = $conn->prepare("SELECT role FROM users WHERE id = ?");
+$stmt->bind_param("i", $nurseID);
+$stmt->execute();
+$stmt->bind_result($role);
+$stmt->fetch();
+$stmt->close();
+
+// Check if the user is authorized
+if ($role !== 'nurse') {
+    die("Error: You do not have the required permissions to access this page.");
+}
+
+// Initialize message variable
 $message = '';
 
-// Handle the action to send patient to nurse or remove from list
+// Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['send_to_nurse'])) {
         $patientID = $_POST['patientID'];
-        $nurseID = $_SESSION['nurseID'];  // Assume nurse ID is stored in session
 
-        // Update patient status to "under treatment"
+        // Update patient status and insert treatment record
         $stmt = $conn->prepare("UPDATE patients SET status = 'under treatment' WHERE patientID = ?");
         $stmt->bind_param("i", $patientID);
-        $stmt->execute();
-        $stmt->close();
-
-        // Insert record into patient_treatment table
-        $stmt = $conn->prepare("INSERT INTO patient_treatment (patientID, status, sent_to_nurse, nurseID) VALUES (?, 'under treatment', NOW(), ?)");
-        $stmt->bind_param("ii", $patientID, $nurseID);
-        $stmt->execute();
+        if ($stmt->execute()) {
+            $stmt = $conn->prepare("INSERT INTO patient_treatment (patientID, status, sent_to_nurse, nurseID) VALUES (?, 'under treatment', NOW(), ?)");
+            $stmt->bind_param("ii", $patientID, $nurseID);
+            if ($stmt->execute()) {
+                $message = "<div class='alert alert-success'>Patient sent to nurse successfully.</div>";
+            } else {
+                $message = "<div class='alert alert-danger'>Error recording treatment. Please try again.</div>";
+            }
+        } else {
+            $message = "<div class='alert alert-danger'>Error updating patient status. Please try again.</div>";
+        }
         $stmt->close();
     } elseif (isset($_POST['remove_patient'])) {
+        // Remove patient and related records
         $patientID = $_POST['patientID'];
-        
-        // Delete related records from patient_vitals table
         $stmt = $conn->prepare("DELETE FROM patient_vitals WHERE patientID = ?");
         $stmt->bind_param("i", $patientID);
         $stmt->execute();
-        $stmt->close();
-
-        // Now remove patient from the patients table
         $stmt = $conn->prepare("DELETE FROM patients WHERE patientID = ?");
         $stmt->bind_param("i", $patientID);
-        $stmt->execute();
+        if ($stmt->execute()) {
+            $message = "<div class='alert alert-success'>Patient removed successfully.</div>";
+        } else {
+            $message = "<div class='alert alert-danger'>Error removing patient. Please try again.</div>";
+        }
         $stmt->close();
     } elseif (isset($_POST['register_patient'])) {
-        // Insert new patient
-        $first_name = $_POST['first_name'];
-        $last_name = $_POST['last_name'];
+        // Register new patient
+        $first_name = htmlspecialchars($_POST['first_name']);
+        $last_name = htmlspecialchars($_POST['last_name']);
         $dateOfBirth = $_POST['dateOfBirth'];
         $gender = $_POST['gender'];
         $phone = $_POST['phone'];
@@ -63,22 +84,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $insurance_number = $_POST['insurance_number'];
         $emergency_contact = $_POST['emergency_contact'];
         $relationship = $_POST['relationship'];
-        $doctor_type = $_POST['doctor_type'];  // Get doctor type from form
+        $doctor_type = $_POST['doctor_type'];
 
-        // Insert patient into database
         $stmt = $conn->prepare("INSERT INTO patients (first_name, last_name, dateOfBirth, gender, phone, email, address, insurance_number, emergency_contact, relationship, status, doctor_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'waiting', ?)");
         $stmt->bind_param("sssssssssss", $first_name, $last_name, $dateOfBirth, $gender, $phone, $email, $address, $insurance_number, $emergency_contact, $relationship, $doctor_type);
         if ($stmt->execute()) {
-            $message = "<div class='alert'>Patient successfully registered!</div>";
+            $message = "<div class='alert alert-success'>Patient successfully registered!</div>";
         } else {
-            $message = "<div class='alert'>Error registering patient. Please try again.</div>";
+            $message = "<div class='alert alert-danger'>Error registering patient. Please try again.</div>";
         }
         $stmt->close();
     }
 }
 
-// Fetch patients with status "waiting"
-$waitingPatients = $conn->query("SELECT * FROM patients WHERE status='waiting'");
+// Fetch waiting patients
+$waitingPatients = $conn->query("SELECT * FROM patients WHERE status = 'waiting'");
+
 ?>
 
 <!DOCTYPE html>
