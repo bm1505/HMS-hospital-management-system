@@ -22,7 +22,7 @@ function insertDefaultAdmin($conn) {
     $default_admin_username = "st.norbert.admin";
     $default_admin_password = password_hash("st.123@norAdmin", PASSWORD_DEFAULT);
 
-    $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
+    $stmt = $conn->prepare("SELECT userID FROM users WHERE username = ?");
     $stmt->bind_param("s", $default_admin_username);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -48,7 +48,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (empty($username) || empty($password)) {
         $error = "Both fields are required.";
     } else {
-        $stmt = $conn->prepare("SELECT id, username, password, role FROM users WHERE username = ?");
+        $stmt = $conn->prepare("SELECT userID, username, password, role FROM users WHERE username = ?");
         $stmt->bind_param("s", $username);
         $stmt->execute();
         $result = $stmt->get_result();

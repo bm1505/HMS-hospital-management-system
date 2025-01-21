@@ -29,28 +29,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $emergency_contact = $_POST['emergency_contact'];
     $doctor_type = $_POST['doctor_type'];
 
-    $stmt = $conn->prepare("
-    INSERT INTO patient_vitals 
-    (patientID, weight, blood_pressure, temperature, height, other_notes, dateOfBirth, gender, phone, email, address, insurance_number, emergency_contact, doctor_type) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-");
-
-    $stmt->bind_param("iddsdsisssssss", 
-    $patientID, $weight, $blood_pressure, $temperature, $height, 
-    $other_notes, $dateOfBirth, $gender, $phone, $email, 
-    $address, $insurance_number, $emergency_contact, $doctor_type
-);
-
-
-    if ($stmt->execute()) {
-        $message = "Patient vitals and personal information recorded successfully!";
-        // Redirect to view_vitals.php after successful save
-        header("Location: view_vitals.php");
-        exit();  // Ensure no further code is executed after redirect
+    // Check for empty fields
+    if (empty($phone_number) || empty($email) || empty($address)) {
+        $message = "Error: Please fill all the required fields.";
     } else {
-        $message = "Error: " . $stmt->error;
+        $stmt = $conn->prepare("
+        INSERT INTO patient_vitals 
+        (patientID, weight, blood_pressure, temperature, height, other_notes, dateOfBirth, gender, phone, email, address, insurance_number, emergency_contact, doctor_type) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+
+        $stmt->bind_param("iddsdsisssssss", 
+            $patientID, $weight, $blood_pressure, $temperature, $height, 
+            $other_notes, $dateOfBirth, $gender, $phone_number, $email, 
+            $address, $insurance_number, $emergency_contact, $doctor_type
+        );
+
+        if ($stmt->execute()) {
+            $message = "Patient vitals and personal information recorded successfully!";
+            // Redirect to view_vitals.php after successful save
+            header("Location: view_vitals.php");
+            exit();
+        } else {
+            $message = "Error: " . $stmt->error;
+        }
+        $stmt->close();
     }
-    $stmt->close();
 }
 
 // Fetch patient data based on patientID if available
@@ -128,22 +132,15 @@ if (isset($_GET['patientID'])) {
 </head>
 <body>
 <div class="container">
-<div class="d-flex justify-content-between">
-        <!-- Back Button -->
+    <div class="d-flex justify-content-between">
         <a href="nurse_dashboard.php" class="btn btn-secondary">Back</a>
-        
-        <!-- Logout Button -->
         <a href="index.php" class="btn btn-danger">Logout</a>
     </div>
     <h1 class="text-center mb-4">Nurse Dashboard - Record Patient Vitals</h1>
     <hr>
-
-    <!-- Display message -->
     <?php if (!empty($message)): ?>
         <div class="alert alert-info"><?= htmlspecialchars($message) ?></div>
     <?php endif; ?>
-
-    <!-- Left Column: Patient Vitals Form -->
     <div class="row">
         <div class="col-md-12">
             <div class="card p-4">
@@ -244,7 +241,6 @@ if (isset($_GET['patientID'])) {
         </div>
     </div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -16,24 +16,16 @@ if ($conn->connect_error) {
     die("Database connection failed: " . $conn->connect_error);
 }
 
-// Ensure nurseID is set in the session
-if (!isset($_SESSION['nurseID'])) {
-    die("Error: You must log in to access this page.");
-}
-$nurseID = $_SESSION['nurseID'];
+// Fetch the role of the logged-in user
+$nurseID = 1; // Simulating a nurseID value for demonstration
 
 // Fetch the role of the logged-in user
-$stmt = $conn->prepare("SELECT role FROM users WHERE id = ?");
+$stmt = $conn->prepare("SELECT role FROM users WHERE userID = ?");
 $stmt->bind_param("i", $nurseID);
 $stmt->execute();
 $stmt->bind_result($role);
 $stmt->fetch();
 $stmt->close();
-
-// Check if the user is authorized
-if ($role !== 'nurse') {
-    die("Error: You do not have the required permissions to access this page.");
-}
 
 // Initialize message variable
 $message = '';
@@ -50,12 +42,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmt = $conn->prepare("INSERT INTO patient_treatment (patientID, status, sent_to_nurse, nurseID) VALUES (?, 'under treatment', NOW(), ?)");
             $stmt->bind_param("ii", $patientID, $nurseID);
             if ($stmt->execute()) {
-                $message = "<div class='alert alert-success'>Patient sent to nurse successfully.</div>";
+                $message = "<div class='alert alert-success' id='message'>Patient sent to nurse successfully.</div>";
             } else {
-                $message = "<div class='alert alert-danger'>Error recording treatment. Please try again.</div>";
+                $message = "<div class='alert alert-danger' id='message'>Error recording treatment. Please try again.</div>";
             }
         } else {
-            $message = "<div class='alert alert-danger'>Error updating patient status. Please try again.</div>";
+            $message = "<div class='alert alert-danger' id='message'>Error updating patient status. Please try again.</div>";
         }
         $stmt->close();
     } elseif (isset($_POST['remove_patient'])) {
@@ -67,9 +59,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt = $conn->prepare("DELETE FROM patients WHERE patientID = ?");
         $stmt->bind_param("i", $patientID);
         if ($stmt->execute()) {
-            $message = "<div class='alert alert-success'>Patient removed successfully.</div>";
+            $message = "<div class='alert alert-success' id='message'>Patient removed successfully.</div>";
         } else {
-            $message = "<div class='alert alert-danger'>Error removing patient. Please try again.</div>";
+            $message = "<div class='alert alert-danger' id='message'>Error removing patient. Please try again.</div>";
         }
         $stmt->close();
     } elseif (isset($_POST['register_patient'])) {
@@ -89,9 +81,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt = $conn->prepare("INSERT INTO patients (first_name, last_name, dateOfBirth, gender, phone, email, address, insurance_number, emergency_contact, relationship, status, doctor_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'waiting', ?)");
         $stmt->bind_param("sssssssssss", $first_name, $last_name, $dateOfBirth, $gender, $phone, $email, $address, $insurance_number, $emergency_contact, $relationship, $doctor_type);
         if ($stmt->execute()) {
-            $message = "<div class='alert alert-success'>Patient successfully registered!</div>";
+            $message = "<div class='alert alert-success' id='message'>Patient successfully registered!</div>";
         } else {
-            $message = "<div class='alert alert-danger'>Error registering patient. Please try again.</div>";
+            $message = "<div class='alert alert-danger' id='message'>Error registering patient. Please try again.</div>";
         }
         $stmt->close();
     }
@@ -99,8 +91,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 // Fetch waiting patients
 $waitingPatients = $conn->query("SELECT * FROM patients WHERE status = 'waiting'");
-
 ?>
+
+<!-- Add JavaScript to hide the message after 5 seconds -->
+<script>
+    // Check if a message is present
+    window.onload = function() {
+        var message = document.getElementById('message');
+        if (message) {
+            setTimeout(function() {
+                message.style.display = 'none'; // Hide the message
+            }, 5000); // 5000 milliseconds = 5 seconds
+        }
+    };
+</script>
+
+
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -111,111 +118,65 @@ $waitingPatients = $conn->query("SELECT * FROM patients WHERE status = 'waiting'
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            background-color: #f0f4f8;
+            background-color: #f9f9f9;
             font-family: 'Arial', sans-serif;
         }
 
         .container {
-            max-width: 1200px;
-            margin-top: 30px;
+            margin-top: 50px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
         }
 
-        h1, h4 {
+        h1 {
+            font-size: 24px;
             color: #2c3e50;
-            font-weight: 700;
             margin-bottom: 20px;
+            text-align: center;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        .form-control, .form-select {
+            border-radius: 5px;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+            border: none;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .table {
+            margin-top: 20px;
         }
 
         .table thead {
             background-color: #3498db;
             color: white;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .table th, .table td {
-            padding: 12px 15px;
-            text-align: center;
-        }
-
-        .table-striped tbody tr:nth-child(odd) {
-            background-color: #ecf0f1;
-        }
-
-        .table-striped tbody tr:nth-child(even) {
-            background-color: #ffffff;
         }
 
         .alert {
-            font-size: 1rem;
-            padding: 10px 20px;
-            background-color: #f39c12;
-            color: white;
-            border-radius: 5px;
-        }
-
-        .left-column {
-            background-color: #ffffff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 25px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .right-column {
-            overflow-x: auto;
-            margin-top: 30px;
-        }
-
-        .btn {
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            display: inline-block;
-            border: none;
-        }
-
-        .btn-primary {
-            background-color: #3498db;
-            color: white;
-        }
-        .btn-primary:hover {
-            background-color: #2980b9;
-            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
-        }
-
-        .btn-danger {
-            background-color: #e74c3c;
-            color: white;
-        }
-        .btn-danger:hover {
-            background-color: #c0392b;
-            box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
-        }
-
-        .footer {
-            text-align: center;
-            padding: 20px;
-            background-color: #2c3e50;
-            color: white;
-            border-top: 1px solid #ddd;
-        }
-
-        footer a {
-            color: #ecf0f1;
-            text-decoration: none;
-        }
-
-        footer a:hover {
-            text-decoration: underline;
+            margin-top: 20px;
         }
     </style>
+
 </head>
 <body>
     <div class="container">
@@ -295,55 +256,48 @@ $waitingPatients = $conn->query("SELECT * FROM patients WHERE status = 'waiting'
 
             <!-- Right Side: Patients Waiting for Treatment -->
             <div class="col-md-6 right-column">
-                <h1 class="text-center">Patients Waiting for Treatment</h1>
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>First Name</th>
-                            <th>Last Name</th>
-                            <th>Date of Birth</th>
-                            <th>Doctor Type</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        if ($waitingPatients->num_rows > 0) {
-                            while ($patient = $waitingPatients->fetch_assoc()) {
-                                echo "<tr>";
-                                echo "<td>" . htmlspecialchars($patient['first_name']) . "</td>";
-                                echo "<td>" . htmlspecialchars($patient['last_name']) . "</td>";
-                                echo "<td>" . htmlspecialchars($patient['dateOfBirth']) . "</td>";
-                                echo "<td>" . htmlspecialchars($patient['doctor_type']) . "</td>";
-                                echo "<td>
-                                        <form method='POST' style='display:inline;'>
-                                            <input type='hidden' name='patientID' value='" . $patient['patientID'] . "'>
-                                            <button type='submit' name='send_to_nurse' class='btn btn-primary'>Send to Nurse</button>
-                                        </form>
-                                        <form method='POST' style='display:inline;'>
-                                            <input type='hidden' name='patientID' value='" . $patient['patientID'] . "'>
-                                            <button type='submit' name='remove_patient' class='btn btn-danger'>Remove</button>
-                                        </form>
-                                      </td>";
-                                echo "</tr>";
-                            }
-                        } else {
-                            echo "<tr><td colspan='5' class='text-center'>No patients waiting.</td></tr>";
-                        }
-                        ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    <h1 class="text-center">Patients Waiting for Treatment</h1>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Patient ID</th> <!-- Added Patient ID column -->
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Date of Birth</th>
+                <th>Doctor Type</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php
+            if ($waitingPatients->num_rows > 0) {
+                while ($patient = $waitingPatients->fetch_assoc()) {
+                    echo "<tr>";
+                    echo "<td>" . htmlspecialchars($patient['patientID']) . "</td>"; // Displaying patientID
+                    echo "<td>" . htmlspecialchars($patient['first_name']) . "</td>";
+                    echo "<td>" . htmlspecialchars($patient['last_name']) . "</td>";
+                    echo "<td>" . htmlspecialchars($patient['dateOfBirth']) . "</td>";
+                    echo "<td>" . htmlspecialchars($patient['doctor_type']) . "</td>";
+                    echo "<td>
+                            <form method='POST' style='display:inline;'>
+                                <input type='hidden' name='patientID' value='" . $patient['patientID'] . "'>
+                                <button type='submit' name='send_to_nurse' class='btn btn-primary'>Send to Nurse</button>
+                            </form>
+                            <form method='POST' style='display:inline;'>
+                                <input type='hidden' name='patientID' value='" . $patient['patientID'] . "'>
+                                <button type='submit' name='remove_patient' class='btn btn-danger'>Remove</button>
+                            </form>
+                          </td>";
+                    echo "</tr>";
+                }
+            } else {
+                echo "<tr><td colspan='6' class='text-center'>No patients waiting.</td></tr>"; // Adjusted colspan to 6
+            }
+            ?>
+        </tbody>
+    </table>
+</div>
 
-    <!-- Footer -->
-    <div class="footer">
-        <p>&copy; 2025 St. Norbert Hospital. All Rights Reserved.</p>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
 </html>
 
 <?php
