@@ -30,36 +30,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registerDoctor'])) {
     $password = isset($_POST['password']) ? mysqli_real_escape_string($conn, $_POST['password']) : '';
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-    if (empty($firstName) || empty($middleName) || empty($surname) || empty($specialization) || empty($contactNumber) || empty($email) || empty($qualification) || empty($address) || empty($username) || empty($password)) {
+    if (empty($firstName) || empty($surname) || empty($specialization) || empty($contactNumber) || empty($email) || empty($qualification) || empty($address) || empty($username) || empty($password)) {
         $error = "All fields are required!";
     } else {
         $conn->autocommit(FALSE); // Start transaction
         try {
             // Insert into doctors table
-            $sql_doctor = "INSERT INTO doctors (firstName, middleName, surname, specialization, contactNumber, email, qualification, address) 
-                           VALUES ('$firstName', '$middleName', '$surname', '$specialization', '$contactNumber', '$email', '$qualification', '$address')";
+            $sql_doctor = "INSERT INTO doctors (firstName, middleName, surname, specialization, contactNumber, email, qualification, address, username, password) 
+                           VALUES ('$firstName', '$middleName', '$surname', '$specialization', '$contactNumber', '$email', '$qualification', '$address', '$username', '$hashed_password')";
             if (!$conn->query($sql_doctor)) {
                 throw new Exception("Doctor registration failed: " . $conn->error);
             }
 
-            // Get the last inserted doctor ID
-            $doctorID = $conn->insert_id;
-
-            // Insert into users table with the doctorID as foreign key
-            $sql_user = "INSERT INTO users (username, password, role) 
-                         VALUES ('$username', '$hashed_password', 'doctor')";
-            if (!$conn->query($sql_user)) {
-                throw new Exception("User registration failed: " . $conn->error);
-            }
-
-            // After inserting the user, link the doctorID in the users table
-            $sql_update_user = "UPDATE users SET doctorID = $doctorID WHERE username = '$username'";
-            if (!$conn->query($sql_update_user)) {
-                throw new Exception("Failed to link doctor with user: " . $conn->error);
-            }
-
             $conn->commit();
-            $success = "Doctor and user account registered successfully!";
+            $success = "Doctor registered successfully!";
         } catch (Exception $e) {
             $conn->rollback();
             $error = $e->getMessage();
@@ -70,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['registerDoctor'])) {
 // Handle Doctor Deletion
 if (isset($_GET['delete'])) {
     $doctor_id = $_GET['delete'];
-    $sql_delete = "DELETE FROM doctors WHERE doctor_id = $doctor_id";
+    $sql_delete = "DELETE FROM doctors WHERE doctorID = $doctor_id";
     if ($conn->query($sql_delete)) {
         $success = "Doctor record deleted successfully!";
     } else {
@@ -95,6 +79,66 @@ if ($result->num_rows > 0) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register Doctor</title>
+    <style>
+        /* Your existing CSS styles */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Register a Doctor</h2>
+        <?php if ($success) echo "<div class='alert alert-success'>$success</div>"; ?>
+        <?php if ($error) echo "<div class='alert alert-danger'>$error</div>"; ?>
+        <form method="POST">
+            <div class="form-group">
+                <label for="firstName">First Name</label>
+                <input type="text" name="firstName" id="firstName" placeholder="First Name" required>
+            </div>
+            <div class="form-group">
+                <label for="middleName">Middle Name</label>
+                <input type="text" name="middleName" id="middleName" placeholder="Middle Name">
+            </div>
+            <div class="form-group">
+                <label for="surname">Surname</label>
+                <input type="text" name="surname" id="surname" placeholder="Surname" required>
+            </div>
+            <div class="form-group">
+                <label for="specialization">Specialization</label>
+                <input type="text" name="specialization" id="specialization" placeholder="Specialization" required>
+            </div>
+            <div class="form-group">
+                <label for="contactNumber">Contact Number</label>
+                <input type="text" name="contactNumber" id="contactNumber" placeholder="Contact Number" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" name="email" id="email" placeholder="Email" required>
+            </div>
+            <div class="form-group">
+                <label for="qualification">Qualification</label>
+                <input type="text" name="qualification" id="qualification" placeholder="Qualification" required>
+            </div>
+            <div class="form-group">
+                <label for="address">Address</label>
+                <textarea name="address" id="address" placeholder="Address" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" name="username" id="username" placeholder="Username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" name="password" id="password" placeholder="Password" required>
+            </div>
+            <button type="submit" name="registerDoctor">Register Doctor</button>
+            <br>
+            
+            <br>
+
+            <button type="button" onclick="window.location.href='view_doctors.php'">View Doctors</button>
+        </form>
+    </div>
+</body>
+</html>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -193,62 +237,3 @@ if ($result->num_rows > 0) {
             background-color: #e53935;
         }
     </style>
-</head>
-<body>
-    <div class="container">
-        <h2>Register a Doctor</h2>
-        <?php if ($success) echo "<div class='alert alert-success'>$success</div>"; ?>
-        <?php if ($error) echo "<div class='alert alert-danger'>$error</div>"; ?>
-        <form method="POST">
-            <div class="form-group">
-                <label for="firstName">First Name</label>
-                <input type="text" name="firstName" id="firstName" placeholder="First Name" required>
-            </div>
-            <div class="form-group">
-                <label for="middleName">Middle Name</label>
-                <input type="text" name="middleName" id="middleName" placeholder="Middle Name" required>
-            </div>
-            <div class="form-group">
-                <label for="surname">Surname</label>
-                <input type="text" name="surname" id="surname" placeholder="Surname" required>
-            </div>
-            <div class="form-group">
-                <label for="specialization">Specialization</label>
-                <input type="text" name="specialization" id="specialization" placeholder="Specialization" required>
-            </div>
-            <div class="form-group">
-                <label for="contactNumber">Contact Number</label>
-                <input type="text" name="contactNumber" id="contactNumber" placeholder="Contact Number" required>
-            </div>
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" name="email" id="email" placeholder="Email" required>
-            </div>
-            <div class="form-group">
-                <label for="qualification">Qualification</label>
-                <input type="text" name="qualification" id="qualification" placeholder="Qualification" required>
-            </div>
-            <div class="form-group">
-                <label for="address">Address</label>
-                <textarea name="address" id="address" placeholder="Address" required></textarea>
-            </div>
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" name="username" id="username" placeholder="Username" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" name="password" id="password" placeholder="Password" required>
-            </div>
-            <button type="submit" name="registerDoctor">Register Doctor</button>
-            <br>
-            
-            <br>
-
-            <button type="button" onclick="window.location.href='view_doctors.php'">View Doctors</button>
-        </form>
-    </div>
-
-   
-</body>
-</html>

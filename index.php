@@ -1,34 +1,39 @@
 <?php
-session_start(); // Start the session at the beginning of the script
+session_start(); // Start the session
 
-// Database connection details
 $servername = "localhost";
 $db_username = "root";
 $db_password = "";
 $dbname = "st_norbert_hospital";
 
-// Establish a database connection
+// Connect to MySQL
 $conn = new mysqli($servername, $db_username, $db_password, $dbname);
-
-// Check connection
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
 $error = "";
 
-// Function to insert default admin if not already present
+// Insert Default Admin if Not Exists
 function insertDefaultAdmin($conn) {
     $default_admin_username = "st.norbert.admin";
     $default_admin_password = password_hash("st.123@norAdmin", PASSWORD_DEFAULT);
 
-    $stmt = $conn->prepare("SELECT userID FROM users WHERE username = ?");
+    $stmt = $conn->prepare("SELECT id FROM admin WHERE username = ?");
+    if ($stmt === false) {
+        die('MySQL prepare error: ' . $conn->error);
+    }
+
     $stmt->bind_param("s", $default_admin_username);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($result->num_rows === 0) {
-        $insert_stmt = $conn->prepare("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
+        $insert_stmt = $conn->prepare("INSERT INTO admin (username, password, role) VALUES (?, ?, ?)");
+        if ($insert_stmt === false) {
+            die('MySQL prepare error: ' . $conn->error);
+        }
+
         $admin_role = "admin";
         $insert_stmt->bind_param("sss", $default_admin_username, $default_admin_password, $admin_role);
         $insert_stmt->execute();
@@ -36,11 +41,9 @@ function insertDefaultAdmin($conn) {
     }
     $stmt->close();
 }
-
-// Insert the default admin
 insertDefaultAdmin($conn);
 
-// Handle login form submission
+// Handle Login
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $username = trim($_POST['username']);
     $password = trim($_POST['password']);
@@ -48,61 +51,72 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (empty($username) || empty($password)) {
         $error = "Both fields are required.";
     } else {
-        $stmt = $conn->prepare("SELECT userID, username, password, role FROM users WHERE username = ?");
-        $stmt->bind_param("s", $username);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        // Define login queries with correct ID field names
+        $sql_queries = [
+            'admin' => "SELECT id, full_name, username, password FROM admin WHERE username = ?",
+            'doctor' => "SELECT doctorID, CONCAT(firstName, ' ', middleName) AS full_name, username, password FROM doctors WHERE username = ?",
+            'nurse' => "SELECT id, full_name, username, password FROM nurses WHERE username = ?",
+            'lab_technician' => "SELECT id, full_name, username, password FROM lab_technicians WHERE username = ?",
+            'pharmacist' => "SELECT id, full_name, username, password FROM pharmacists WHERE username = ?",
+            'reception' => "SELECT id, full_name, username, password FROM reception WHERE username = ?"
+        ];
 
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            if (password_verify($password, $row['password'])) {
-                session_regenerate_id(true); // Regenerate session ID for security
-                $_SESSION['user_id'] = $row['id'];
-                $_SESSION['username'] = $row['username'];
-                $_SESSION['role'] = $row['role'];
+        $authenticated = false;
+        $user_data = null;
 
-                // Role-specific session handling
-                if ($row['role'] == 'doctor') {
-                    $_SESSION['doctorID'] = $row['id']; // Store doctorID in session
-                } elseif ($row['role'] == 'nurse') {
-                    $_SESSION['nurseID'] = $row['id']; // Store nurseID in session
-                }
-
-                // Redirect based on role
-                switch ($row['role']) {
-                    case 'admin':
-                        header("Location: admin/admin_page.php");
-                        break;
-                    case 'doctor':
-                        header("Location: doctor/doctor.php");  // Redirect to doctor dashboard
-                        break;
-                    case 'user':
-                        header("Location: reception/reception.php");
-                        break;
-                    case 'nurse':
-                        header("Location: nurse/nurse_dashboard.php");
-                        break;
-                    case 'lab_technician':
-                        header("Location: lab/lab_dashboard.php");
-                        break;
-                    case 'pharmacist':
-                        header("Location: pharmacist/pharmacist_dashboard.php");
-                        break;
-                    default:
-                        header("Location: home.php");
-                        break;
-                }
-                exit();
-            } else {
-                $error = "Invalid username or password.";
+        foreach ($sql_queries as $role => $sql) {
+            $stmt = $conn->prepare($sql);
+            if ($stmt === false) {
+                die('MySQL prepare error: ' . $conn->error);
             }
+
+            $stmt->bind_param("s", $username);
+            $stmt->execute();
+            $result = $stmt->get_result();
+
+            if ($result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                if (password_verify($password, $row['password'])) {
+                    $authenticated = true;
+                    $user_data = [
+                        'id' => isset($row['doctorID']) ? $row['doctorID'] : $row['id'], // Use doctorID for doctors
+                        'username' => $row['username'],
+                        'role' => $role,
+                        'full_name' => $row['full_name']
+                    ];
+                    break;
+                }
+            }
+            $stmt->close();
+        }
+
+        if ($authenticated) {
+            session_regenerate_id(true);
+            $_SESSION['user_id'] = $user_data['id']; // Store user ID (doctorID for doctors)
+            $_SESSION['username'] = $user_data['username'];
+            $_SESSION['role'] = $user_data['role'];
+            $_SESSION['full_name'] = $user_data['full_name'];
+
+            // Store doctorID separately if the user is a doctor
+            if ($user_data['role'] === 'doctor') {
+                $_SESSION['doctorID'] = $user_data['id'];
+            }
+
+            $redirect_pages = [
+                'admin' => "admin/admin_page.php",
+                'doctor' => "doctor/doctor.php",
+                'nurse' => "nurse/nurse_dashboard.php",
+                'lab_technician' => "lab/lab_dashboard.php",
+                'pharmacist' => "pharmacist/pharmacist_dashboard.php",
+                'reception' => "reception/reception.php"
+            ];
+            header("Location: " . ($redirect_pages[$user_data['role']] ?? "home.php"));
+            exit();
         } else {
             $error = "Invalid username or password.";
         }
-        $stmt->close();
     }
 }
-
 
 $conn->close();
 ?>
