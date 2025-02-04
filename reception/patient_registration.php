@@ -17,11 +17,11 @@ if ($conn->connect_error) {
 }
 
 // Fetch the role of the logged-in user
-$nurseID = 1; // Simulating a nurseID value for demonstration
-
-// Fetch the role of the logged-in user
-$stmt = $conn->prepare("SELECT role FROM users WHERE userID = ?");
-$stmt->bind_param("i", $nurseID);
+$stmt = $conn->prepare("SELECT role FROM nurses WHERE id = ?");
+if (!$stmt) {
+    die("Prepare failed: " . $conn->error);
+}
+$stmt->bind_param("i", $id);
 $stmt->execute();
 $stmt->bind_result($role);
 $stmt->fetch();

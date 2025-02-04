@@ -106,7 +106,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 'admin' => "admin/admin_page.php",
                 'doctor' => "doctor/doctor.php",
                 'nurse' => "nurse/nurse_dashboard.php",
-                'lab_technician' => "lab/lab_dashboard.php",
+                'lab_technician' => "laboratory/laboratory.php",
                 'pharmacist' => "pharmacist/pharmacist_dashboard.php",
                 'reception' => "reception/reception.php"
             ];
