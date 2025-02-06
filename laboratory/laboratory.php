@@ -11,7 +11,7 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            background-color: #f8f9fa;
+            background-color:rgb(152, 197, 241);
         }
         .container {
             display: flex;
@@ -33,8 +33,8 @@
         }
         /* Custom navbar height reduction */
         .navbar {
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
+            padding-top:0px;
+            padding-bottom: 1px;
         }
         .navbar .navbar-text {
             font-size: 1.25rem; /* Slightly adjust font size if needed */

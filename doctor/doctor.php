@@ -10,6 +10,7 @@ if (!isset($_SESSION['username'])) {
 
 // Get the username from the session
 $username = $_SESSION['username'];
+
 ?>
 
 <!DOCTYPE html>
@@ -22,116 +23,181 @@ $username = $_SESSION['username'];
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --background-color:rgb(95, 172, 250);
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
         body, html {
             height: 100%;
             display: flex;
             flex-direction: column;
-            background-color:rgb(3, 66, 14);
+            background-color: var(--background-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            padding: 20px;
-        }
-        .card {
-            width: 20rem;
-            margin: 1rem;
-            text-align: center;
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgb(241, 237, 2);
-        }
-        .card:hover {
-            transform: translateY(-5px);
-            transition: 0.3s;
-        }
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: bold;
-        }
-        .icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            color:rgb(5, 121, 34);
-        }
-        .footer {
-            background-color:rgb(2, 60, 117);
-            color: #ffffff;
-            padding: 10px;
-            text-align: center;
-            margin-top: auto;
-        }
-    
+
         .navbar {
-            background-color: white;
-            padding: 1.5rem;
+            background-color:rgb(187, 243, 201);
+            box-shadow: var(--card-shadow);
+            padding: 1rem 2rem;
         }
+
         .navbar-text {
             font-size: 1rem;
-            color: black;
+            color: var(--primary-color);
+            font-weight: 500;
         }
+
         .logout-btn {
-            background-color:rgb(245, 6, 30);
+            background-color: var(--accent-color);
             border: none;
             color: white;
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 1.5rem;
             border-radius: 5px;
             font-size: 0.9rem;
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
+
         .logout-btn:hover {
             background-color: #c82333;
         }
+
         .notifications {
             position: relative;
             cursor: pointer;
+            margin-right: 1.5rem;
         }
+
         .notification-badge {
             position: absolute;
             top: -5px;
             right: -10px;
-            background: white;
-            color: black;
+            background: var(--accent-color);
+            color: white;
             font-size: 0.8rem;
             border-radius: 50%;
             padding: 3px 7px;
         }
+
         .notification-popup {
             position: absolute;
             top: 40px;
             right: 0;
-            background-color: whitesmoke;
-            border: 1px solid green;
-            box-shadow: 0 4px 6px rgb(240, 3, 3);
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            box-shadow: var(--card-shadow);
             padding: 10px;
-            width: 200px;
+            width: 250px;
             display: none;
             z-index: 10;
+            border-radius: 8px;
         }
+
         .notification-item {
-            padding: 5px 0;
-            border-bottom: 1px solidrgb(245, 8, 8);
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+            transition: background-color 0.3s ease;
         }
+
+        .notification-item:hover {
+            background-color:rgb(248, 250, 250);
+        }
+
         .notification-item:last-child {
             border-bottom: none;
         }
+
         .notifications:hover .notification-popup {
             display: block;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 1rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            width: 22rem;
+            margin: 1rem;
+            text-align: center;
+            border: none;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background-color: white;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--secondary-color);
+        }
+
+        .card-text {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--secondary-color);
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .footer {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            margin-top: auto;
+            font-size: 0.9rem;
+        }
+
+        #currentDateTime {
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            font-weight: 500;
         }
     </style>
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container-fluid">
             <span class="navbar-text">
-                Logged in as: <strong><?php echo htmlspecialchars($username); ?></strong>
+                 <strong><?php echo htmlspecialchars($username); ?></strong>
             </span>
             <span class="navbar-text ml-auto" id="currentDateTime"></span>
-            <div class="notifications ml-3">
-                <a href="#" class="nav-link text-white">
+            <div class="notifications">
+                <a href="#" class="nav-link">
                     <i class="fas fa-bell"></i>
                     <span class="notification-badge" id="notificationCount" style="display: none;">0</span>
                 </a>

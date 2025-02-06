@@ -120,7 +120,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 $conn->close();
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -128,9 +127,10 @@ $conn->close();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - St. Norbert Hospital</title>
     <style>
+        /* General Body Styling */
         body {
-            font-family: Arial, sans-serif;
-            background-color:rgb(4, 102, 56);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color:rgb(152, 228, 238); /* Light blue background for a calming effect */
             margin: 0;
             padding: 0;
             display: flex;
@@ -138,43 +138,76 @@ $conn->close();
             align-items: center;
             height: 100vh;
         }
+
+        /* Login Container */
         .login-container {
             background: white;
-            padding: 50px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             width: 350px;
+            text-align: center;
         }
+
+        /* Hospital Logo or Title */
         .login-container h1 {
             margin-bottom: 20px;
-            text-align: center;
-            color: green;
+            font-size: 24px;
+            color: #00796b; /* Dark teal for a professional look */
+            font-weight: 600;
         }
+
+        /* Form Styling */
         .login-container form {
             display: flex;
             flex-direction: column;
         }
+
+        /* Input Fields */
         .login-container input {
             margin-bottom: 15px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            padding: 12px;
+            border: 1px solid #b2dfdb; /* Light teal border */
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s ease;
         }
+
+        .login-container input:focus {
+            border-color: #00796b; /* Dark teal on focus */
+        }
+
+        /* Login Button */
         .login-container button {
-            background-color:rgb(3, 45, 88);
+            background-color: #00796b; /* Dark teal */
             color: white;
-            padding: 10px;
+            padding: 12px;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
+            transition: background-color 0.3s ease;
         }
+
         .login-container button:hover {
-            background-color:rgb(7, 247, 19);
+            background-color: #004d40; /* Darker teal on hover */
         }
+
+        /* Error Message */
         .error {
-            color: red;
+            color: #d32f2f; /* Red for errors */
             font-size: 14px;
             text-align: center;
+            margin-bottom: 15px;
+        }
+
+        /* Additional Styling for Hospital Theme */
+        .login-container::before {
+            content: "🏥";
+            font-size: 40px;
+            display: block;
             margin-bottom: 10px;
         }
     </style>
