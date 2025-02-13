@@ -1,29 +1,45 @@
 <?php
-$servername = "localhost";
-$db_username = "root";
-$db_password = "";
-$dbname = "st_norbert_hospital";
+session_start();
 
-// Create a database connection
-$conn = new mysqli($servername, $db_username, $db_password, $dbname);
-
-// Check the connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+if (!isset($_SESSION['username'])) {
+    header("Location: ../index.php");
+    exit;
 }
 
-// Check if prescriptionID is passed
-if (isset($_POST['prescriptionID'])) {
-    $prescriptionID = $_POST['prescriptionID'];
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['prescriptionID'])) {
+    $prescriptionID = intval($_POST['prescriptionID']);
 
-    // Update the prescription status to 'Finished'
-    $sql = "UPDATE prescriptions SET status = 'Finished' WHERE prescriptionID = ?";
-    $stmt = $conn->prepare($sql);
+    // Database connection
+    $servername = "localhost";
+    $username   = "root";
+    $password   = "";
+    $dbname     = "st_norbert_hospital";
+    $conn = new mysqli($servername, $username, $password, $dbname);
+
+    if ($conn->connect_error) {
+        die("Connection failed: " . $conn->connect_error);
+    }
+
+    // Update status to Done (matches ENUM values: Pending, Done)
+    $updateQuery = "UPDATE prescriptions SET status='Done' WHERE prescriptionID=?";
+    $stmt = $conn->prepare($updateQuery);
+    if (!$stmt) {
+        die("Prepare failed: " . $conn->error);
+    }
     $stmt->bind_param("i", $prescriptionID);
-    $stmt->execute();
 
-    // Close statement and connection
+    if ($stmt->execute()) {
+        // Redirect back to the fulfillment page after successful update
+        header("Location: prescription_fulfillment.php");
+        exit;
+    } else {
+        die("Error updating status: " . $conn->error);
+    }
+
     $stmt->close();
     $conn->close();
+} else {
+    header("Location: prescription_fulfillment.php");
+    exit;
 }
 ?>

@@ -36,7 +36,6 @@ function generateTrackingNumber() {
 // Retrieve patient details
 $patientID = $_GET['patientID'] ?? $_SESSION['patientID'] ?? '';
 $patientName = '';
-$testRequested = '';
 $sampleType = '';
 
 if (!empty($patientID)) {
@@ -111,7 +110,7 @@ if (isset($_POST['submit'])) {
         if (mysqli_stmt_execute($stmt)) {
             echo "<script>
                 alert('Sample added successfully!\\nSample ID: $sampleID\\nTracking Number: $trackingNumber');
-                window.location='sample_management.php';
+                window.location = 'laboratory.php';
             </script>";
         } else {
             echo "<script>alert('Error: " . mysqli_error($conn) . "');</script>";
@@ -129,7 +128,7 @@ mysqli_close($conn);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sample Management</title>
+    <title>Laboratory Sample Management</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -144,18 +143,51 @@ mysqli_close($conn);
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
         }
         h2 {
             text-align: center;
             margin-bottom: 25px;
             color: #2c3e50;
-            width: 100%;
             font-size: 28px;
             border-bottom: 2px solid #3498db;
             padding-bottom: 10px;
+        }
+        .info, .tracking-number {
+            width: 100%;
+            margin-bottom: 25px;
+        }
+        .info {
+            background-color: #f0f8ff;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #3498db;
+        }
+        .info p {
+            margin: 0;
+            font-size: 16px;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+        .tracking-number {
+            background-color: #e8f4fc;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px dashed #3498db;
+            text-align: center;
+            font-size: 20px;
+            color: #2c3e50;
+        }
+        .form-columns {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .form-column {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #f0f0f0;
+            border-radius: 8px;
+            min-width: 300px;
         }
         label {
             display: block;
@@ -192,66 +224,15 @@ mysqli_close($conn);
         input[type="submit"]:hover {
             background-color: #2980b9;
         }
-        .info {
-            background-color: #f0f8ff;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            border: 2px solid #3498db;
-            width: 100%;
-        }
-        .info p {
-            margin: 0;
-            font-size: 16px;
-            color: #2c3e50;
-            line-height: 1.6;
-        }
-        .tracking-number {
-            background-color: #e8f4fc;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            border: 2px dashed #3498db;
-            text-align: center;
-            font-size: 20px;
-            color: #2c3e50;
-            width: 100%;
-        }
-        .form-column {
-            flex: 1;
-            padding: 15px;
-            min-width: 300px;
-        }
-        .form-column:first-child {
-            border-right: 2px solid #f0f0f0;
-        }
-        .sample-type-list {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 6px;
-            border: 2px solid #e0e0e0;
-            line-height: 1.8;
-            font-size: 15px;
-            white-space: pre-wrap;
-        }
         @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-            }
-            .form-column {
-                flex: 100%;
-                padding: 10px;
-            }
-            .form-column:first-child {
-                border-right: none;
-                border-bottom: 2px solid #f0f0f0;
-                padding-bottom: 20px;
+            .form-columns {
+                flex-direction: column;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container"><a href="laboratory.php">⬅️</a>
         <h2>Laboratory Sample Management</h2>
         
         <!-- Display Patient Info -->
@@ -265,21 +246,23 @@ mysqli_close($conn);
             <strong>Generated Tracking Number:</strong> <?php echo generateTrackingNumber(); ?>
         </div>
 
-        <!-- Sample Submission Form -->
-        <form action="" method="post">
+        <!-- Sample Submission Form divided into two columns -->
+        <form action="" method="post" class="form-columns">
             <input type="hidden" name="patientID" value="<?php echo htmlspecialchars($patientID); ?>">
             <input type="hidden" name="sampleType" value="<?php echo htmlspecialchars($sampleType); ?>">
             
             <div class="form-column">
                 <label for="sampleType">Test Details:</label>
-                <div class="sample-type-list"><?php
+                <div class="sample-type-list">
+                    <?php
                     if (!empty($sampleType)) {
                         $sampleTypes = explode(',', $sampleType);
                         foreach ($sampleTypes as $index => $type) {
-                            echo ($index + 1) . ". " . trim($type) . "\n";
+                            echo ($index + 1) . ". " . trim($type) . "<br>";
                         }
                     }
-                ?></div>
+                    ?>
+                </div>
                 
                 <label for="dateReceived">Date Received:</label>
                 <input type="date" id="dateReceived" name="dateReceived" required>

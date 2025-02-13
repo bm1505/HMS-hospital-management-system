@@ -107,7 +107,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 'doctor' => "doctor/doctor.php",
                 'nurse' => "nurse/nurse_dashboard.php",
                 'lab_technician' => "laboratory/laboratory.php",
-                'pharmacist' => "pharmacist/pharmacist_dashboard.php",
+                'pharmacist' => "pharmacy/pharmacy.php",
                 'reception' => "reception/reception.php"
             ];
             header("Location: " . ($redirect_pages[$user_data['role']] ?? "home.php"));

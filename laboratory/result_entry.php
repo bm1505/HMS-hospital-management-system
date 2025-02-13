@@ -22,21 +22,41 @@ if (isset($_POST['submit_result'])) {
     $firstName = isset($_POST['first_name']) ? mysqli_real_escape_string($conn, $_POST['first_name']) : '';
     $lastName = isset($_POST['last_name']) ? mysqli_real_escape_string($conn, $_POST['last_name']) : '';
 
-    // Update laboratory sample (only update status)
-    $update_query = "UPDATE laboratory_samples 
-                    SET status = 'Completed' 
-                    WHERE sampleID = '$sampleID'";
-    
-    // Insert into laboratory_results
-    $insert_query = "INSERT INTO laboratory_results (sampleID, patientID, first_name, last_name, test_details, test_result, technician_name, test_date, status)
-                    SELECT ls.sampleID, ls.patientID, '$firstName', '$lastName', ls.test_details, '$testResult', '$technicianName', NOW(), 'Completed'
-                    FROM laboratory_samples ls
-                    WHERE ls.sampleID = '$sampleID'";
+    // Get patientID from laboratory_samples
+    $patientQuery = "SELECT patientID FROM laboratory_samples WHERE sampleID = '$sampleID'";
+    $patientResult = mysqli_query($conn, $patientQuery);
 
-    if (mysqli_query($conn, $update_query) && mysqli_query($conn, $insert_query)) {
-        $message = "Result entered successfully!";
+    if ($patientResult && mysqli_num_rows($patientResult) > 0) {
+        $patientRow = mysqli_fetch_assoc($patientResult);
+        $patientID = $patientRow['patientID'];
+
+        // Get doctorID from lab_requests for this patient
+        $doctorQuery = "SELECT doctorID FROM lab_requests WHERE patientID = '$patientID' LIMIT 1";
+        $doctorResult = mysqli_query($conn, $doctorQuery);
+
+        if ($doctorResult && mysqli_num_rows($doctorResult) > 0) {
+            $doctorRow = mysqli_fetch_assoc($doctorResult);
+            $doctorID = $doctorRow['doctorID'];
+
+            // Update laboratory sample (only update status)
+            $update_query = "UPDATE laboratory_samples SET status = 'Completed' WHERE sampleID = '$sampleID'";
+
+            // Insert into laboratory_results including doctorID
+            $insert_query = "INSERT INTO laboratory_results (sampleID, patientID, first_name, last_name, test_details, test_result, technician_name, test_date, status, doctorID)
+                            SELECT ls.sampleID, ls.patientID, '$firstName', '$lastName', ls.test_details, '$testResult', '$technicianName', NOW(), 'Completed', '$doctorID'
+                            FROM laboratory_samples ls
+                            WHERE ls.sampleID = '$sampleID'";
+
+            if (mysqli_query($conn, $update_query) && mysqli_query($conn, $insert_query)) {
+                $message = "Result entered successfully!";
+            } else {
+                $message = "Error inserting results: " . mysqli_error($conn);
+            }
+        } else {
+            $message = "Error: No doctor found for this patient in lab_requests.";
+        }
     } else {
-        $message = "Error: " . mysqli_error($conn);
+        $message = "Error: Patient not found for the given sampleID.";
     }
 }
 
@@ -57,7 +77,7 @@ if (!$result) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="30">
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laboratory Samples Management</title>
     <style>
@@ -326,6 +346,7 @@ if (mysqli_num_rows($result) > 0)
             }
             ?>
         </tbody>
+        <a href="laboratory.php">⬅️</a>
     </table>
 
     <!-- Result Entry Pop-Up Form -->
@@ -390,6 +411,7 @@ if (mysqli_num_rows($result) > 0)
     </script>
 </body>
 </html>
+
 <?php
 // Close database connection
 mysqli_close($conn);

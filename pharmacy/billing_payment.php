@@ -3,7 +3,7 @@
 $servername = "localhost";
 $username = "root";
 $password = "";
-$dbname = "st_norbert_hospital"; // Update to your actual database name
+$dbname = "st_norbert_hospital";
 
 // Create connection
 $conn = mysqli_connect($servername, $username, $password, $dbname);
@@ -13,45 +13,83 @@ if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
-// Function to fetch all bills
-function getBills($conn) {
-    $sql = "SELECT * FROM bills";
+// Create bills table if it doesn't exist
+$sql = "CREATE TABLE IF NOT EXISTS bills (
+    billID INT AUTO_INCREMENT PRIMARY KEY,
+    patientID INT NOT NULL,
+    patientName VARCHAR(255) NOT NULL,
+    medicationName VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL,
+    pricePerUnit DECIMAL(10, 2) NOT NULL,
+    totalAmount DECIMAL(10, 2) NOT NULL,
+    paymentStatus ENUM('Pending', 'Paid') DEFAULT 'Pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)";
+
+if (!mysqli_query($conn, $sql)) {
+    die("Error creating table: " . mysqli_error($conn));
+}
+
+// Create discharge table if it doesn't exist
+$sql = "CREATE TABLE IF NOT EXISTS discharge (
+    dischargeID INT AUTO_INCREMENT PRIMARY KEY,
+    patientID INT NOT NULL,
+    patientName VARCHAR(255) NOT NULL,
+    dischargeDate DATE NOT NULL,
+    totalCost DECIMAL(10, 2) NOT NULL,
+    paymentStatus ENUM('Pending', 'Paid') DEFAULT 'Pending'
+)";
+
+if (!mysqli_query($conn, $sql)) {
+    die("Error creating table: " . mysqli_error($conn));
+}
+
+// Create complete_treatment table if it doesn't exist
+$sql = "CREATE TABLE IF NOT EXISTS complete_treatment (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    patientName VARCHAR(255) NOT NULL,
+    paymentStatus ENUM('Pending', 'Paid') DEFAULT 'Pending',
+    completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)";
+
+if (!mysqli_query($conn, $sql)) {
+    die("Error creating table: " . mysqli_error($conn));
+}
+
+// Function to fetch all discharge records
+function getDischarges($conn) {
+    $sql = "SELECT * FROM discharge";
     $result = mysqli_query($conn, $sql);
+
+    if ($result === false) {
+        die("Error executing query: " . mysqli_error($conn));
+    }
+
     return mysqli_fetch_all($result, MYSQLI_ASSOC);
 }
 
-// Add a new bill
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['addBill'])) {
-    $patientID = $_POST['patientID'];
-    $medicationName = $_POST['medicationName'];
-    $quantity = $_POST['quantity'];
-    $pricePerUnit = $_POST['pricePerUnit'];
-    $totalAmount = $quantity * $pricePerUnit;
-    $paymentStatus = "Pending";
+// Mark treatment as complete
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['mark_complete'])) {
+    $patientName = $_POST['patientName'];
+    $paymentStatus = $_POST['paymentStatus'];
 
-    $sql = "INSERT INTO bills (patientID, medicationName, quantity, pricePerUnit, totalAmount, paymentStatus) 
-            VALUES ('$patientID', '$medicationName', '$quantity', '$pricePerUnit', '$totalAmount', '$paymentStatus')";
+    // Check if payment status is "Paid"
+    if ($paymentStatus === 'Paid') {
+        $sql = "INSERT INTO complete_treatment (patientName, paymentStatus) 
+                VALUES ('$patientName', '$paymentStatus')";
 
-    if (mysqli_query($conn, $sql)) {
-        echo "<script>alert('Bill added successfully!');</script>";
+        if (mysqli_query($conn, $sql)) {
+            echo "<script>alert('Treatment marked as complete!');</script>";
+        } else {
+            echo "<script>alert('Error: " . mysqli_error($conn) . "');</script>";
+        }
     } else {
-        echo "<script>alert('Error: " . mysqli_error($conn) . "');</script>";
+        echo "<script>alert('Cannot mark as done. Payment status is Pending.');</script>";
     }
 }
 
-// Update payment status
-if (isset($_GET['pay'])) {
-    $billID = $_GET['pay'];
-    $sql = "UPDATE bills SET paymentStatus = 'Paid' WHERE billID = '$billID'";
-    if (mysqli_query($conn, $sql)) {
-        echo "<script>alert('Payment status updated successfully!');</script>";
-    } else {
-        echo "<script>alert('Error: " . mysqli_error($conn) . "');</script>";
-    }
-}
-
-// Fetch bills list
-$bills = getBills($conn);
+// Fetch discharge records
+$discharges = getDischarges($conn);
 ?>
 
 <!DOCTYPE html>
@@ -61,6 +99,7 @@ $bills = getBills($conn);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Billing and Payment Management</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         /* General styles */
         body {
@@ -76,79 +115,32 @@ $bills = getBills($conn);
             margin-bottom: 20px;
         }
 
-        form {
-            max-width: 600px;
-            margin: 20px auto;
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .table-container {
             background: #fff;
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
         }
 
-        form label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #555;
-        }
-
-        form input {
+        .table-container table {
             width: 100%;
-            padding: 12px;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
-        }
-
-        form input:focus {
-            border-color: #007bff;
-            outline: none;
-        }
-
-        form button {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            font-size: 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        form button:hover {
-            background-color: #218838;
-        }
-
-        a {
-            text-decoration: none;
-            color: #007bff;
-            font-weight: bold;
-        }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        /* Table styles */
-        table {
-            width: 90%;
-            margin: 20px auto;
             border-collapse: collapse;
-            background-color: #fff;
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
         }
 
-        th, td {
+        .table-container th, .table-container td {
             padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
 
-        th {
+        .table-container th {
             background-color: #007bff;
             color: #fff;
             font-size: 14px;
@@ -156,55 +148,94 @@ $bills = getBills($conn);
             font-weight: bold;
         }
 
-        td {
+        .table-container td {
             font-size: 14px;
             color: #555;
         }
 
-        tr:hover {
+        .table-container tr:hover {
             background-color: #f1f1f1;
         }
 
-        td:last-child a {
-            margin-right: 10px;
+        .payment-status.paid {
+            color: #28a745;
+        }
+
+        .payment-status.pending {
+            color: #dc3545;
+        }
+
+        .btn {
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            background-color: #28a745;
+            color: white;
+            border: none;
+        }
+
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn:hover:not(:disabled) {
+            background-color: #218838;
         }
 
         /* Responsive styles */
         @media (max-width: 768px) {
-            form {
+            .container {
+                padding: 10px;
+            }
+
+            .table-container {
                 padding: 15px;
             }
 
-            table, th, td {
+            .table-container th, .table-container td {
                 font-size: 12px;
-            }
-
-            form input, form button {
-                font-size: 14px;
             }
         }
     </style>
 </head>
 <body>
-    <h1>Billing and Payment Management</h1>
-
-    <h2>Add New Bill</h2>
-    <form method="POST" action="">
-        <label for="patientID">Patient ID:</label>
-        <input type="text" name="patientID" id="patientID" required><br>
-
-        <label for="medicationName">Medication Name:</label>
-        <input type="text" name="medicationName" id="medicationName" required><br>
-
-        <label for="quantity">Quantity:</label>
-        <input type="number" name="quantity" id="quantity" required><br>
-
-        <label for="pricePerUnit">Price Per Unit:</label>
-        <input type="number" step="0.01" name="pricePerUnit" id="pricePerUnit" required><br>
-
-        <button type="submit" name="addBill">Add Bill</button>
-        <a href="bills_list.php">View Bills</a>
-    </form>
-
+    <div class="container">
+        <!-- Discharge Table -->
+        <div class="table-container">
+            <h2>Bills Records</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Patient Name</th>                      
+                        <th>Total Cost</th>
+                        <th>Payment Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($discharges as $discharge): ?>
+                        <tr>                           
+                            <td><?= $discharge['patientName'] ?></td>
+                            <td><?= number_format($discharge['totalCost'], 2) ?></td>
+                            <td class="payment-status <?= strtolower($discharge['paymentStatus']) ?>">
+                                <?= $discharge['paymentStatus'] ?>
+                            </td>
+                            <td>
+                                <form method="POST" style="display:inline;">
+                                    <input type="hidden" name="patientName" value="<?= $discharge['patientName'] ?>">
+                                    <input type="hidden" name="paymentStatus" value="<?= $discharge['paymentStatus'] ?>">
+                                    <button type="submit" name="mark_complete" class="btn" <?= $discharge['paymentStatus'] === 'Pending' ? 'disabled' : '' ?>>
+                                        Done
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </body>
 </html>
