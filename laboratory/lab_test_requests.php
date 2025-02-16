@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-
+// Database connection details
 $servername = "localhost";
 $db_username = "root";
 $db_password = "";
@@ -18,14 +18,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
     $labRequestID = $_POST['labRequestID'];
     $status = $_POST['status'];
 
+    // Update the status of the lab request
     $sql = "UPDATE lab_requests SET test_status = ? WHERE labRequestID = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("si", $status, $labRequestID);
     $stmt->execute();
     $stmt->close();
+
+    // If status is "Done and Completed", schedule the request for deletion after 2 minutes
+    if ($status === "Done and Completed") {
+        $deleteTime = date('Y-m-d H:i:s', strtotime('+2 minutes'));
+        $sql = "UPDATE lab_requests SET delete_at = ? WHERE labRequestID = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("si", $deleteTime, $labRequestID);
+        $stmt->execute();
+        $stmt->close();
+    }
 }
 
-// Handle sample addition
 // Handle sample addition
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_sample'])) {
     $labRequestID = $_POST['labRequestID'];
@@ -56,6 +66,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_sample'])) {
     header("Location: sample_management.php?labRequestID=$labRequestID&patientID=$patientID&patientName=$patientName");
     exit();
 }
+
+// Automatically delete completed requests after 2 minutes
+$currentTime = date('Y-m-d H:i:s');
+$sql = "DELETE FROM lab_requests WHERE test_status = 'Done and Completed' AND delete_at <= ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("s", $currentTime);
+$stmt->execute();
+$stmt->close();
 
 // Fetch lab test requests with patient and doctor names
 $sql = "SELECT lr.*, 
@@ -98,56 +116,54 @@ $conn->close();
     
     <div class="table-responsive lab-table">
         <table class="table table-hover table-bordered">
-        <thead class="bg-lab-primary text-white">
-    <tr>
-        <th>Request ID</th>
-        <th>Patient ID</th> <!-- Added Patient ID column -->
-        <th>Patient Name</th>
-        <th>Doctor Name</th>
-        <th>Tests Requested</th>
-        <th>Test Date</th>
-        <th>Status</th>
-        <th>Created At</th>
-        <th>Actions</th>
-    </tr>
-</thead>
-
+            <thead class="bg-lab-primary text-white">
+                <tr>
+                    <th>Request ID</th>
+                    <th>Patient ID</th>
+                    <th>Patient Name</th>
+                    <th>Doctor Name</th>
+                    <th>Tests Requested</th>
+                    <th>Test Date</th>
+                    <th>Status</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
             <tbody>
-    <?php while ($row = $result->fetch_assoc()): ?>
-    <tr>
-        <td><?= htmlspecialchars($row['labRequestID']) ?></td>
-        <td><?= htmlspecialchars($row['patientID']) ?></td> <!-- Displaying Patient ID -->
-        <td class="patient-name">
-            <?= htmlspecialchars($row['patient_first'] . ' ' . $row['patient_last']) ?>
-        </td>
-        <td class="doctor-name">
-            <?= htmlspecialchars($row['doctor_first'] . ' ' . $row['doctor_last']) ?>
-        </td>
-        <td><?= htmlspecialchars($row['test_details']) ?></td>
-        <td><?= htmlspecialchars($row['testDate']) ?></td>
-        <td>
-            <form method="POST" class="d-inline">
-                <input type="hidden" name="labRequestID" value="<?= $row['labRequestID'] ?>">
-                <select name="status" class="form-select status-select" onchange="this.form.submit()">
-                    <option value="Under Treatment" <?= $row['test_status'] == 'Under Treatment' ? 'selected' : '' ?>>Under Treatment</option>
-                    <option value="Done and Completed" <?= $row['test_status'] == 'Done and Completed' ? 'selected' : '' ?>>Completed</option>
-                </select>
-                <input type="hidden" name="update_status" value="1">
-            </form>
-        </td>
-        <td><?= htmlspecialchars($row['created_at']) ?></td>
-        <td>
-            <form method="POST" class="d-inline">
-                <input type="hidden" name="labRequestID" value="<?= $row['labRequestID'] ?>">
-                <button type="submit" name="add_sample" class="btn btn-lab-action btn-sm">
-                    <i class="bi bi-vial"></i> Add Sample
-                </button>
-            </form>
-        </td>
-    </tr>
-    <?php endwhile; ?>
-</tbody>
-
+                <?php while ($row = $result->fetch_assoc()): ?>
+                <tr>
+                    <td><?= htmlspecialchars($row['labRequestID']) ?></td>
+                    <td><?= htmlspecialchars($row['patientID']) ?></td>
+                    <td class="patient-name">
+                        <?= htmlspecialchars($row['patient_first'] . ' ' . $row['patient_last']) ?>
+                    </td>
+                    <td class="doctor-name">
+                        <?= htmlspecialchars($row['doctor_first'] . ' ' . $row['doctor_last']) ?>
+                    </td>
+                    <td><?= htmlspecialchars($row['test_details']) ?></td>
+                    <td><?= htmlspecialchars($row['testDate']) ?></td>
+                    <td>
+                        <form method="POST" class="d-inline">
+                            <input type="hidden" name="labRequestID" value="<?= $row['labRequestID'] ?>">
+                            <select name="status" class="form-select status-select" onchange="this.form.submit()">
+                                <option value="Under Treatment" <?= $row['test_status'] == 'Under Treatment' ? 'selected' : '' ?>>Under Treatment</option>
+                                <option value="Done and Completed" <?= $row['test_status'] == 'Done and Completed' ? 'selected' : '' ?>>Completed</option>
+                            </select>
+                            <input type="hidden" name="update_status" value="1">
+                        </form>
+                    </td>
+                    <td><?= htmlspecialchars($row['created_at']) ?></td>
+                    <td>
+                        <form method="POST" class="d-inline">
+                            <input type="hidden" name="labRequestID" value="<?= $row['labRequestID'] ?>">
+                            <button type="submit" name="add_sample" class="btn btn-lab-action btn-sm">
+                                <i class="bi bi-vial"></i> Add Sample
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                <?php endwhile; ?>
+            </tbody>
         </table>
     </div>
 </div>
@@ -164,7 +180,7 @@ $conn->close();
     }
 
     body {
-        background:rgb(157, 199, 241);
+        background: rgb(157, 199, 241);
         font-family: 'Roboto Condensed', sans-serif;
     }
 
