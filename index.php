@@ -53,12 +53,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     } else {
         // Define login queries with correct ID field names
         $sql_queries = [
-            'admin' => "SELECT id, full_name, username, password FROM admin WHERE username = ?",
-            'doctor' => "SELECT doctorID, CONCAT(firstName, ' ', middleName) AS full_name, username, password FROM doctors WHERE username = ?",
-            'nurse' => "SELECT id, full_name, username, password FROM nurses WHERE username = ?",
-            'lab_technician' => "SELECT id, full_name, username, password FROM lab_technicians WHERE username = ?",
-            'pharmacist' => "SELECT id, full_name, username, password FROM pharmacists WHERE username = ?",
-            'reception' => "SELECT id, full_name, username, password FROM reception WHERE username = ?"
+            'admin'         => "SELECT id, full_name, username, password FROM admin WHERE username = ?",
+            'doctor'        => "SELECT doctorID, CONCAT(firstName, ' ', middleName) AS full_name, username, password FROM doctors WHERE username = ?",
+            'nurse'         => "SELECT id, full_name, username, password FROM nurses WHERE username = ?",
+            'lab_technician'=> "SELECT id, full_name, username, password FROM lab_technicians WHERE username = ?",
+            'pharmacist'    => "SELECT id, full_name, username, password FROM pharmacists WHERE username = ?",
+            'reception'     => "SELECT id, full_name, username, password FROM reception WHERE username = ?"
         ];
 
         $authenticated = false;
@@ -79,9 +79,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 if (password_verify($password, $row['password'])) {
                     $authenticated = true;
                     $user_data = [
-                        'id' => isset($row['doctorID']) ? $row['doctorID'] : $row['id'], // Use doctorID for doctors
-                        'username' => $row['username'],
-                        'role' => $role,
+                        'id'        => isset($row['doctorID']) ? $row['doctorID'] : $row['id'], // Use doctorID for doctors
+                        'username'  => $row['username'],
+                        'role'      => $role,
                         'full_name' => $row['full_name']
                     ];
                     break;
@@ -91,24 +91,72 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         if ($authenticated) {
+            // Regenerate session ID for security and generate a unique session token
             session_regenerate_id(true);
-            $_SESSION['user_id'] = $user_data['id']; // Store user ID (doctorID for doctors)
-            $_SESSION['username'] = $user_data['username'];
-            $_SESSION['role'] = $user_data['role'];
-            $_SESSION['full_name'] = $user_data['full_name'];
+            $token = bin2hex(random_bytes(16));
+            $_SESSION['session_token'] = $token;
+            $_SESSION['user_id']     = $user_data['id'];
+            $_SESSION['username']    = $user_data['username'];
+            $_SESSION['role']        = $user_data['role'];
+            $_SESSION['full_name']   = $user_data['full_name'];
 
             // Store doctorID separately if the user is a doctor
             if ($user_data['role'] === 'doctor') {
                 $_SESSION['doctorID'] = $user_data['id'];
             }
 
+            // Determine the table and ID field based on the role
+            switch ($user_data['role']) {
+                case 'admin':
+                    $table = 'admin';
+                    $id_field = 'id';
+                    break;
+                case 'doctor':
+                    $table = 'doctors';
+                    $id_field = 'doctorID';
+                    break;
+                case 'nurse':
+                    $table = 'nurses';
+                    $id_field = 'id';
+                    break;
+                case 'lab_technician':
+                    $table = 'lab_technicians';
+                    $id_field = 'id';
+                    break;
+                case 'pharmacist':
+                    $table = 'pharmacists';
+                    $id_field = 'id';
+                    break;
+                case 'reception':
+                    $table = 'reception';
+                    $id_field = 'id';
+                    break;
+                default:
+                    $table = "";
+                    $id_field = "";
+                    break;
+            }
+
+            // Update the session token in the corresponding table
+            if ($table && $id_field) {
+                $stmt_token = $conn->prepare("UPDATE $table SET session_token = ? WHERE $id_field = ?");
+                if ($stmt_token) {
+                    // Binding both parameters as strings; adjust the type if your IDs are integers.
+                    $stmt_token->bind_param("ss", $token, $user_data['id']);
+                    $stmt_token->execute();
+                    $stmt_token->close();
+                } else {
+                    die("Failed to prepare token update: " . $conn->error);
+                }
+            }
+
             $redirect_pages = [
-                'admin' => "admin/admin_page.php",
-                'doctor' => "doctor/doctor.php",
-                'nurse' => "nurse/nurse_dashboard.php",
-                'lab_technician' => "laboratory/laboratory.php",
-                'pharmacist' => "pharmacy/pharmacy.php",
-                'reception' => "reception/reception.php"
+                'admin'         => "admin/admin_page.php",
+                'doctor'        => "doctor/doctor.php",
+                'nurse'         => "nurse/nurse_dashboard.php",
+                'lab_technician'=> "laboratory/laboratory.php",
+                'pharmacist'    => "pharmacy/pharmacy.php",
+                'reception'     => "reception/reception.php"
             ];
             header("Location: " . ($redirect_pages[$user_data['role']] ?? "home.php"));
             exit();
@@ -130,7 +178,7 @@ $conn->close();
         /* General Body Styling */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color:rgb(152, 228, 238); /* Light blue background for a calming effect */
+            background-color: rgb(152, 228, 238); /* Light blue background for a calming effect */
             margin: 0;
             padding: 0;
             display: flex;

@@ -15,7 +15,7 @@
         height: 100%;
         display: flex;
         flex-direction: column;
-        background-color: #f8f9fa;
+        background-color:rgb(248, 250, 250);
     }
 
     .container {

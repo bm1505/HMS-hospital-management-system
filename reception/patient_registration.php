@@ -118,13 +118,13 @@ $waitingPatients = $conn->query("SELECT * FROM patients WHERE status = 'waiting'
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            background-color: #f9f9f9;
+            background-color:rgb(0, 156, 177);
             font-family: 'Arial', sans-serif;
         }
 
         .container {
             margin-top: 50px;
-            background-color: #fff;
+            background-color:rgb(155, 240, 252);
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             padding: 20px;
