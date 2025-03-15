@@ -3,17 +3,9 @@ session_start();
 
 // Check if the user is logged in
 if (!isset($_SESSION['username'])) {
-    echo json_encode(["error" => "Unauthorized"]);
+    echo json_encode(['error' => 'Unauthorized access']);
     exit;
 }
-
-// Ensure prescriptionID is provided
-if (!isset($_GET['prescriptionID'])) {
-    echo json_encode(["error" => "Missing prescriptionID"]);
-    exit;
-}
-
-$prescriptionID = intval($_GET['prescriptionID']);
 
 // Database connection
 $servername = "localhost";
@@ -22,26 +14,27 @@ $password   = "";
 $dbname     = "st_norbert_hospital";
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
-    echo json_encode(["error" => "Connection failed: " . $conn->connect_error]);
-    exit;
+    die(json_encode(['error' => 'Database connection failed']));
 }
 
-// Fetch medicines from prescription_medicines table for the given prescriptionID
-$query = "SELECT medicineID, prescriptionID, medicationName, quantities, dosages, instructions 
-          FROM prescription_medicines 
-          WHERE prescriptionID = ?";
-$stmt = $conn->prepare($query);
-$stmt->bind_param("i", $prescriptionID);
-$stmt->execute();
-$result = $stmt->get_result();
-
-$medicines = [];
-while($row = $result->fetch_assoc()){
-    $medicines[] = $row;
+// Fetch medicine details for a specific prescription
+if (isset($_GET['prescriptionID'])) {
+    $prescriptionID = intval($_GET['prescriptionID']);
+    $query = "SELECT medicationName, quantities, dosages, instructions 
+              FROM prescription_medicines 
+              WHERE prescriptionID = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $prescriptionID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $medicines = [];
+    while ($row = $result->fetch_assoc()) {
+        $medicines[] = $row;
+    }
+    $stmt->close();
+    echo json_encode($medicines);
+} else {
+    echo json_encode(['error' => 'Invalid request']);
 }
-
-$stmt->close();
 $conn->close();
-
-echo json_encode($medicines);
 ?>

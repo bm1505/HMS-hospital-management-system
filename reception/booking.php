@@ -17,6 +17,20 @@ if ($conn->connect_error) {
 $success_message = "";
 $error_message = "";
 
+// Function to automatically remove past appointments
+function removePastAppointments($conn) {
+    $currentDateTime = date('Y-m-d H:i:s');
+    $sql = "DELETE FROM appointments WHERE CONCAT(appointment_date, ' ', appointment_time) < '$currentDateTime'";
+    if ($conn->query($sql) === TRUE) {
+        // Optional: Log or handle the deletion
+    } else {
+        // Optional: Log or handle the error
+    }
+}
+
+// Call the function to remove past appointments
+removePastAppointments($conn);
+
 // Process Add Appointment form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit_appointment'])) {
     $doctor_id = intval($_POST['doctor_id']);
@@ -62,7 +76,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['saveDiagnosis'])) {
 }
 
 // Determine the selected doctor for displaying appointments.
-// If a doctor_id is posted via the appointment form, use that; otherwise, select the first available doctor.
 $selected_doctor_id = 0;
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['doctor_id'])) {
     $selected_doctor_id = intval($_POST['doctor_id']);
@@ -75,13 +88,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['doctor_id'])) {
     }
 }
 
-// Retrieve list of doctors for the dropdown (concatenating firstName, middleName, surname)
+// Retrieve list of doctors for the dropdown
 $doctors = [];
 $doctor_sql = "SELECT doctorID, firstName, middleName, surname FROM doctors";
 $doctor_result = $conn->query($doctor_sql);
 if ($doctor_result) {
     while ($row = $doctor_result->fetch_assoc()) {
-        // Build full name (skip middleName if empty)
         $fullName = $row['firstName'] . " ";
         if (!empty($row['middleName'])) {
             $fullName .= $row['middleName'] . " ";
@@ -92,10 +104,9 @@ if ($doctor_result) {
     }
 }
 
-// Retrieve all appointments for the selected doctor and join with doctors to fetch doctor's full name
+// Retrieve all appointments for the selected doctor
 $appointments = [];
 if ($selected_doctor_id > 0) {
-    // Use CONCAT to build the doctor's full name from the doctors table
     $sql = "SELECT a.id, a.patient_name, a.appointment_date, a.appointment_time, a.reason, 
                    a.diagnosis, a.lab_tests, a.other_notes,
                    CONCAT(d.firstName, ' ', IFNULL(d.middleName, ''), ' ', d.surname) as doctor_name
@@ -120,9 +131,7 @@ $conn->close();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schedule Appointments</title>
-    <!-- Include Bootstrap CSS from CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Custom styles for hospital theme -->
     <style>
         body {
             font-family: 'Roboto', Arial, sans-serif;
@@ -186,9 +195,9 @@ $conn->close();
 <body>
 <div class="container">
     <?php if (!empty($success_message)): ?>
-        <div class="alert alert-success"><?php echo htmlspecialchars($success_message); ?></div>
+        <div class="alert alert-success" id="successMessage"><?php echo htmlspecialchars($success_message); ?></div>
     <?php elseif (!empty($error_message)): ?>
-        <div class="alert alert-danger"><?php echo htmlspecialchars($error_message); ?></div>
+        <div class="alert alert-danger" id="errorMessage"><?php echo htmlspecialchars($error_message); ?></div>
     <?php endif; ?>
 
     <div class="row">
@@ -252,17 +261,10 @@ $conn->close();
                         <td><?php echo htmlspecialchars($appointment['appointment_time']); ?></td>
                         <td><?php echo nl2br(htmlspecialchars($appointment['reason'])); ?></td>
                         <td>
-                            <!-- Remove Appointment Form -->
                             <form method="post" style="display:inline-block;">
                                 <input type="hidden" name="appointment_id" value="<?php echo $appointment['id']; ?>">
                                 <button type="submit" name="removeAppointment" class="btn btn-danger btn-sm action-btn" onclick="return confirm('Are you sure you want to remove this appointment?');">Remove</button>
                             </form>
-                            <!-- Add Diagnosis Button (triggers modal) -->
-                            <button type="button" class="btn btn-info btn-sm add-diagnosis-btn action-btn" 
-                                data-appointment-id="<?php echo $appointment['id']; ?>"
-                                data-patient-name="<?php echo htmlspecialchars($appointment['patient_name']); ?>">
-                                Add Diagnosis
-                            </button>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -278,24 +280,13 @@ $conn->close();
 <!-- Include Bootstrap JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// JavaScript to handle opening the Diagnosis Modal and populating patient info
-document.addEventListener("DOMContentLoaded", function(){
-    var diagnosisModal = new bootstrap.Modal(document.getElementById('diagnosisModal'), {});
-    var diagnosisButtons = document.querySelectorAll('.add-diagnosis-btn');
-    diagnosisButtons.forEach(function(button){
-        button.addEventListener('click', function(){
-            var appointmentId = this.getAttribute('data-appointment-id');
-            var patientName = this.getAttribute('data-patient-name');
-            // Populate hidden field in the modal form
-            document.getElementById('modal_appointment_id').value = appointmentId;
-            // Update patient info in the modal header
-            document.querySelector('#modal_patient_info span').textContent = patientName;
-            // Update treatment history link (assuming treatment.php uses GET parameter patientName)
-            document.getElementById('treatmentLink').href = "treatment.php?patientName=" + encodeURIComponent(patientName);
-            diagnosisModal.show();
-        });
-    });
-});
+// Automatically hide success/error messages after 1 minute
+setTimeout(function() {
+    var successMessage = document.getElementById('successMessage');
+    var errorMessage = document.getElementById('errorMessage');
+    if (successMessage) successMessage.style.display = 'none';
+    if (errorMessage) errorMessage.style.display = 'none';
+}, 60000); // 60,000 milliseconds = 1 minute
 </script>
 </body>
 </html>

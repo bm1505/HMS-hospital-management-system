@@ -23,7 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submitDischarge'])) {
     $dischargeDate = $_POST['dischargeDate'];
     $totalCost = $_POST['totalCost'];
 
-    $stmt = $conn->prepare("INSERT INTO discharge (patientName, dischargeDate, totalCost) VALUES (?, ?, ?)");
+    // Insert discharge record and update the submission time
+    $stmt = $conn->prepare("INSERT INTO discharge (patientName, dischargeDate, totalCost, submission_time) VALUES (?, ?, ?, NOW())");
     $stmt->bind_param("ssd", $patientName, $dischargeDate, $totalCost);
 
     if ($stmt->execute()) {
@@ -34,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submitDischarge'])) {
     $stmt->close();
 }
 
-// Fetch prescriptions with patient names only
+// Fetch prescriptions with patient names only, excluding those submitted more than 5 minutes ago
 $query = "SELECT 
             p.prescriptionID, 
             p.dateIssued, 
@@ -43,7 +44,9 @@ $query = "SELECT
             pt.last_name AS patientLastName
           FROM prescriptions p
           JOIN patients pt ON p.patientID = pt.patientID
+          LEFT JOIN discharge d ON CONCAT(pt.first_name, ' ', pt.last_name) = d.patientName
           WHERE p.status = 'Pending'
+            AND (d.submission_time IS NULL OR d.submission_time >= NOW() - INTERVAL 5 MINUTE)
           ORDER BY p.dateIssued DESC";
 
 $result = $conn->query($query);
@@ -81,7 +84,6 @@ if (!$result) {
                     <tr>
                         <th>Patient Name</th>
                         <th>Date Issued</th>
-                        <th>Status</th>
                         <th>Action</th>
                         <th>View Medicine</th>
                     </tr>
@@ -92,13 +94,6 @@ if (!$result) {
                             <tr id="row-<?php echo $row['prescriptionID']; ?>">
                                 <td><?php echo htmlspecialchars($row['patientFirstName'] . ' ' . $row['patientLastName']); ?></td>
                                 <td><?php echo htmlspecialchars($row['dateIssued']); ?></td>
-                                <td>
-                                    <?php if (strtolower($row['status']) == 'pending'): ?>
-                                        <span class="status-pending">Pending</span>
-                                    <?php else: ?>
-                                        <span class="done-text">Done</span>
-                                    <?php endif; ?>
-                                </td>
                                 <td>
                                     <form method="POST" action="update_prescription_status.php" style="display:inline;" class="fulfillForm">
                                         <input type="hidden" name="prescriptionID" value="<?php echo $row['prescriptionID']; ?>">
@@ -115,7 +110,7 @@ if (!$result) {
                         <?php endwhile; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="5" class="text-center">No pending prescriptions found.</td>
+                            <td colspan="4" class="text-center">No pending prescriptions found.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -255,6 +250,98 @@ if (!$result) {
         });
     });
     </script>
+    <script>
+$(document).ready(function(){
+    $(".viewMedicineBtn").click(function(){
+        var prescriptionID = $(this).data('id');
+        var patientName = $(this).data('patientname');
+
+        $.ajax({
+            url: 'fetch_medicines.php',
+            type: 'GET',
+            data: { prescriptionID: prescriptionID },
+            dataType: 'json',
+            success: function(response){
+                var tableContent = "";
+                if(response.error) {
+                    tableContent = "<tr><td colspan='6'>" + response.error + "</td></tr>";
+                } else {
+                    $.each(response, function(index, medicine){
+                        tableContent += "<tr>";
+                        tableContent += "<td>" + medicine.medicationName + "</td>";
+                        tableContent += "<td>" + medicine.quantities + "</td>";
+                        tableContent += "<td>" + medicine.dosages + "</td>";
+                        tableContent += "<td>" + medicine.instructions + "</td>";
+                        tableContent += "<td><input type='number' class='form-control price-input' name='price[]' placeholder='Selling Price'></td>";
+                        tableContent += "<td><input type='number' class='form-control cost-input' name='cost[]' placeholder='Cost Price'></td>";
+                        tableContent += "</tr>";
+                    });
+                }
+                $("#medicineDetails").html(tableContent);
+                $("#totalCost").text("0");
+                $("#totalCostInput").val("");
+                $("#patientName").val(patientName);
+                $("#medicineModal").modal("show");
+            },
+            error: function(){
+                $("#medicineDetails").html("<tr><td colspan='6'>Error fetching medicines.</td></tr>");
+                $("#medicineModal").modal("show");
+            }
+        });
+    });
+
+    // Calculate total cost whenever input changes
+    $(document).on("input", ".price-input, .cost-input", function(){
+        var total = 0;
+        $(".price-input").each(function(){
+            total += parseFloat($(this).val()) || 0;
+        });
+        $("#totalCost").text(total.toFixed(2));
+        $("#totalCostInput").val(total.toFixed(2));
+    });
+
+    // Send medicine sale data to server
+    $("#submitPriceBtn").click(function(){
+        var medicines = [];
+        $("#medicineDetails tr").each(function(){
+            var medicineName = $(this).find("td:eq(0)").text();
+            var quantitySold = $(this).find("td:eq(1)").text();
+            var sellingPrice = $(this).find(".price-input").val();
+            var costPrice = $(this).find(".cost-input").val();
+            var saleDate = new Date().toISOString().slice(0, 10);
+
+            if(medicineName && sellingPrice && costPrice) {
+                medicines.push({
+                    medicine_name: medicineName,
+                    quantity_sold: quantitySold,
+                    selling_price: sellingPrice,
+                    cost_price: costPrice,
+                    sale_date: saleDate
+                });
+            }
+        });
+
+        if(medicines.length > 0){
+            $.ajax({
+                url: 'save_medicine_sale.php',
+                type: 'POST',
+                data: { medicines: JSON.stringify(medicines) },
+                success: function(response){
+                    alert(response);
+                    $("#medicineModal").modal("hide");
+                    $("#dischargeModal").modal("show");
+                },
+                error: function(){
+                    alert("Error submitting sales data.");
+                }
+            });
+        } else {
+            alert("Please enter valid prices before submitting.");
+        }
+    });
+});
+</script>
+
 </body>
 </html>
 <?php $conn->close(); ?>

@@ -19,16 +19,19 @@ if ($conn->connect_error) {
 
 // Process Add Medication (insert into medicine_stock)
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['addMedication'])) {
+    // Retrieve form values (note the change: pricePerUnit becomes unitPrice)
     $medicineName   = $_POST['medicineName'];
     $currentStock   = $_POST['quantityInStock'];
-    $expirationDate = $_POST['expirationDate'];
+    $unitPrice      = $_POST['unitPrice'];
     $supplier       = $_POST['supplier'];
-    $pricePerUnit   = $_POST['pricePerUnit'];
+    $expirationDate = $_POST['expirationDate'];
     $reorderThreshold = $_POST['reorderThreshold'];
     $category       = $_POST['category'];
 
-    $stmt = $conn->prepare("INSERT INTO medicine_stock (medicineName, currentStock, ExpirationDate, supplier, PricePerUnit, ReorderThreshold, Category) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("sissdis", $medicineName, $currentStock, $expirationDate, $supplier, $pricePerUnit, $reorderThreshold, $category);
+    // Prepare insert statement
+    // updatedAt is set to NOW() and status is 'active'
+    $stmt = $conn->prepare("INSERT INTO medicine_stock (medicineName, currentStock, unitPrice, supplier, updatedAt, status, ExpirationDate, ReorderThreshold, Category) VALUES (?, ?, ?, ?, NOW(), 'active', ?, ?, ?)");
+    $stmt->bind_param("sidssis", $medicineName, $currentStock, $unitPrice, $supplier, $expirationDate, $reorderThreshold, $category);
 
     if ($stmt->execute()) {
         echo "<script>alert('Medication added successfully!');</script>";
@@ -43,14 +46,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['editMedication'])) {
     $stockID        = $_POST['stockID'];
     $medicineName   = $_POST['medicineName'];
     $currentStock   = $_POST['quantityInStock'];
-    $expirationDate = $_POST['expirationDate'];
+    $unitPrice      = $_POST['unitPrice'];
     $supplier       = $_POST['supplier'];
-    $pricePerUnit   = $_POST['pricePerUnit'];
+    $expirationDate = $_POST['expirationDate'];
     $reorderThreshold = $_POST['reorderThreshold'];
     $category       = $_POST['category'];
 
-    $stmt = $conn->prepare("UPDATE medicine_stock SET medicineName=?, currentStock=?, ExpirationDate=?, supplier=?, PricePerUnit=?, ReorderThreshold=?, Category=? WHERE stockID=?");
-    $stmt->bind_param("sissdisi", $medicineName, $currentStock, $expirationDate, $supplier, $pricePerUnit, $reorderThreshold, $category, $stockID);
+    // Update query sets updatedAt to NOW() and status to 'active'
+    $stmt = $conn->prepare("UPDATE medicine_stock SET medicineName=?, currentStock=?, unitPrice=?, supplier=?, updatedAt=NOW(), status='active', ExpirationDate=?, ReorderThreshold=?, Category=? WHERE stockID=?");
+    $stmt->bind_param("sidssisi", $medicineName, $currentStock, $unitPrice, $supplier, $expirationDate, $reorderThreshold, $category, $stockID);
+    
     if ($stmt->execute()) {
         echo "<script>alert('Medication updated successfully!');</script>";
     } else {
@@ -81,7 +86,6 @@ if (!$result) {
     die("Error fetching medications: " . $conn->error);
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -106,7 +110,7 @@ if (!$result) {
         <!-- Medication Table -->
         <div class="col-md-12 table-container">
             <h2 class="text-center mb-4">Current Medications</h2>
-            <button class="btn btn-success btn-print" data-toggle="modal" data-target="#reportModal">Print Report</button>
+ 
             <!-- Button to trigger the add medication modal -->
             <button class="btn btn-primary mb-3" data-toggle="modal" data-target="#addMedicationModal">Add New Medication</button>
             <button style="background-color: #007bff; border: none; padding: 7px 20px; border-radius: 5px; cursor: pointer;">
@@ -119,9 +123,9 @@ if (!$result) {
                         <tr>
                             <th>Medication Name</th>
                             <th>Quantity in Stock</th>
-                            <th>Expiration Date</th>
+                            <th>Unit Price</th>
                             <th>Supplier</th>
-                            <th>Price per Unit</th>
+                            <th>Expiration Date</th>
                             <th>Reorder Threshold</th>
                             <th>Category</th>
                             <th>Actions</th>
@@ -133,9 +137,9 @@ if (!$result) {
                                 <tr>
                                     <td><?= htmlspecialchars($row['medicineName']); ?></td>
                                     <td><?= htmlspecialchars($row['currentStock']); ?></td>
-                                    <td><?= htmlspecialchars($row['ExpirationDate']); ?></td>
+                                    <td><?= htmlspecialchars($row['unitPrice']); ?></td>
                                     <td><?= htmlspecialchars($row['supplier']); ?></td>
-                                    <td><?= htmlspecialchars($row['PricePerUnit']); ?></td>
+                                    <td><?= htmlspecialchars($row['ExpirationDate']); ?></td>
                                     <td><?= htmlspecialchars($row['ReorderThreshold']); ?></td>
                                     <td><?= htmlspecialchars($row['Category']); ?></td>
                                     <td>
@@ -143,9 +147,9 @@ if (!$result) {
                                             data-id="<?= $row['stockID']; ?>"
                                             data-medicinename="<?= htmlspecialchars($row['medicineName']); ?>"
                                             data-quantity="<?= $row['currentStock']; ?>"
-                                            data-expiration="<?= $row['ExpirationDate']; ?>"
+                                            data-unitprice="<?= $row['unitPrice']; ?>"
                                             data-supplier="<?= htmlspecialchars($row['supplier']); ?>"
-                                            data-price="<?= $row['PricePerUnit']; ?>"
+                                            data-expiration="<?= $row['ExpirationDate']; ?>"
                                             data-reorder="<?= $row['ReorderThreshold']; ?>"
                                             data-category="<?= htmlspecialchars($row['Category']); ?>"
                                             data-toggle="modal" data-target="#editMedicationModal">
@@ -188,16 +192,16 @@ if (!$result) {
                         <input type="number" class="form-control" id="quantityInStock" name="quantityInStock" required>
                     </div>
                     <div class="form-group">
-                        <label for="expirationDate">Expiration Date</label>
-                        <input type="date" class="form-control" id="expirationDate" name="expirationDate" required>
+                        <label for="unitPrice">Unit Price</label>
+                        <input type="number" step="0.01" class="form-control" id="unitPrice" name="unitPrice" required>
                     </div>
                     <div class="form-group">
                         <label for="supplier">Supplier</label>
                         <input type="text" class="form-control" id="supplier" name="supplier" required>
                     </div>
                     <div class="form-group">
-                        <label for="pricePerUnit">Price per Unit</label>
-                        <input type="number" step="0.01" class="form-control" id="pricePerUnit" name="pricePerUnit" required>
+                        <label for="expirationDate">Expiration Date</label>
+                        <input type="date" class="form-control" id="expirationDate" name="expirationDate" required>
                     </div>
                     <div class="form-group">
                         <label for="reorderThreshold">Reorder Threshold</label>
@@ -238,16 +242,16 @@ if (!$result) {
                         <input type="number" class="form-control" id="editQuantityInStock" name="quantityInStock" required>
                     </div>
                     <div class="form-group">
-                        <label for="editExpirationDate">Expiration Date</label>
-                        <input type="date" class="form-control" id="editExpirationDate" name="expirationDate" required>
+                        <label for="editUnitPrice">Unit Price</label>
+                        <input type="number" step="0.01" class="form-control" id="editUnitPrice" name="unitPrice" required>
                     </div>
                     <div class="form-group">
                         <label for="editSupplier">Supplier</label>
                         <input type="text" class="form-control" id="editSupplier" name="supplier" required>
                     </div>
                     <div class="form-group">
-                        <label for="editPricePerUnit">Price per Unit</label>
-                        <input type="number" step="0.01" class="form-control" id="editPricePerUnit" name="pricePerUnit" required>
+                        <label for="editExpirationDate">Expiration Date</label>
+                        <input type="date" class="form-control" id="editExpirationDate" name="expirationDate" required>
                     </div>
                     <div class="form-group">
                         <label for="editReorderThreshold">Reorder Threshold</label>
@@ -345,21 +349,21 @@ $(document).ready(function(){
 
     // Populate the Edit Medication Modal with data from the clicked row
     $('.edit-btn').click(function(){
-        var stockID = $(this).data('id');
-        var medName = $(this).data('medicinename');
-        var quantity = $(this).data('quantity');
-        var expiration = $(this).data('expiration');
-        var supplier = $(this).data('supplier');
-        var price = $(this).data('price');
-        var reorder = $(this).data('reorder');
-        var category = $(this).data('category');
+        var stockID   = $(this).data('id');
+        var medName   = $(this).data('medicinename');
+        var quantity  = $(this).data('quantity');
+        var unitPrice = $(this).data('unitprice');
+        var supplier  = $(this).data('supplier');
+        var expiration= $(this).data('expiration');
+        var reorder   = $(this).data('reorder');
+        var category  = $(this).data('category');
 
         $('#editMedicationID').val(stockID);
         $('#editMedicationName').val(medName);
         $('#editQuantityInStock').val(quantity);
-        $('#editExpirationDate').val(expiration);
+        $('#editUnitPrice').val(unitPrice);
         $('#editSupplier').val(supplier);
-        $('#editPricePerUnit').val(price);
+        $('#editExpirationDate').val(expiration);
         $('#editReorderThreshold').val(reorder);
         $('#editCategory').val(category);
     });

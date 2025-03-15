@@ -157,21 +157,21 @@
             </div>
         </div>
 
+        <!-- Payment Management -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Payment Management</h5>
+                <p class="card-text">Handle payments, track transactions, and manage billing efficiently.</p>
+                <a href="payment.php" class="btn btn-primary">Manage Payments</a>
+            </div>
+        </div>
+
         <!-- Prescription Fulfillment -->
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Prescription Fulfillment</h5>
                 <p class="card-text">Receive and process prescriptions from the Doctor module.</p>
                 <a href="prescription_fulfillment.php" class="btn btn-primary">Fulfill Prescriptions</a>
-            </div>
-        </div>
-
-        <!-- Billing and Payment -->
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Billing and Payments</h5>
-                <p class="card-text">Calculate medication costs, generate invoices, and process payments.</p>
-                <a href="billing_payment.php" class="btn btn-primary">Manage Billing</a>
             </div>
         </div>
 
@@ -183,12 +183,43 @@
                 <a href="medicine_order_requests.php" class="btn btn-primary">Order Medicines</a>
             </div>
         </div>
+
+        <!-- Profit and Stock Price Module -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Profit & Stock Price</h5>
+                <p class="card-text">View profit reports and stock prices.</p>
+                <button class="btn btn-primary" data-toggle="modal" data-target="#profitStockModal">
+                    View Reports
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Footer -->
     <footer class="footer">
         <p>&copy; 2024 Hospital Management System | All Rights Reserved</p>
     </footer>
+
+    <!-- Profit and Stock Price Modal -->
+    <div class="modal fade" id="profitStockModal" tabindex="-1" role="dialog" aria-labelledby="profitStockModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="profitStockModalLabel">Select Report</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center">
+                        <a href="Profit.php" class="btn btn-primary btn-lg btn-block mb-3">Profit Report</a>
+                        <a href="StockPrice.php" class="btn btn-primary btn-lg btn-block">Stock Price Report</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Optional JavaScript for Bootstrap -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
