@@ -86,17 +86,19 @@ session_start();
         </header>
         <hr>
         <div class="row equal-height mt-5">
-            <!-- Doctor Module -->
+        <div class="row equal-height mt-4">
+            <!-- Patient Registration Module -->
             <div class="col-md-4 d-flex">
                 <div class="card text-center w-100">
                     <div class="card-body">
-                        <div class="module-icon">👨‍⚕️</div>
-                        <h5 class="card-title">Doctor</h5>
-                        <p class="card-text">Add and manage doctor profiles, appointments, and schedules.</p>
-                        <a href="doctor/doctor.php" class="btn btn-primary">Access</a>
+                        <div class="module-icon">🧑‍🤝‍🧑</div>
+                        <h5 class="card-title">Patient Registration</h5>
+                        <p class="card-text">Register new patients and manage check-ins and appointments.</p>
+                        <a href="reception/patient_registration.php" class="btn btn-primary">Access</a>
                     </div>
                 </div>
             </div>
+          
             <!-- Pharmacy Module -->
             <div class="col-md-4 d-flex">
                 <div class="card text-center w-100">
@@ -108,6 +110,7 @@ session_start();
                     </div>
                 </div>
             </div>
+            
             <!-- Laboratory Module -->
             <div class="col-md-4 d-flex">
                 <div class="card text-center w-100">
@@ -121,43 +124,9 @@ session_start();
             </div>
         </div>
 
-        <div class="row equal-height mt-4">
-            <!-- Patient Registration Module -->
-            <div class="col-md-4 d-flex">
-                <div class="card text-center w-100">
-                    <div class="card-body">
-                        <div class="module-icon">🧑‍🤝‍🧑</div>
-                        <h5 class="card-title">Patient Registration</h5>
-                        <p class="card-text">Register new patients and manage check-ins and appointments.</p>
-                        <a href="patient/patient.php" class="btn btn-primary">Access</a>
-                    </div>
-                </div>
-            </div>
-            <!-- Billing Module -->
-            <div class="col-md-4 d-flex">
-                <div class="card text-center w-100">
-                    <div class="card-body">
-                        <div class="module-icon">💰</div>
-                        <h5 class="card-title">Billing</h5>
-                        <p class="card-text">Handle patient billing, insurance, and payment records.</p>
-                        <a href="billing/billing.php" class="btn btn-primary">Access</a>
-                    </div>
-                </div>
-            </div>
+        
             <!-- Reports Module -->
-            <div class="col-md-4 d-flex">
-                <div class="card text-center w-100">
-                    <div class="card-body">
-                        <div class="module-icon">📊</div>
-                        <h5 class="card-title">Reports</h5>
-                        <p class="card-text">Generate and download various hospital reports.</p>
-                        <a href="reports/generate.php" class="btn btn-primary">Access</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+          
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>

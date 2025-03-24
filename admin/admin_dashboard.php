@@ -94,34 +94,39 @@
             <div class="module-icon">💊</div>
             <div class="module-title">Pharmacy</div>
             <div class="module-description">Manage medicines and pharmacy records.</div>
-            <a href="pharmacy.php" class="module-btn">Go to Module</a>
+            <a href="../pharmacy/pharmacy.php" class="module-btn">Go to Module</a>
         </div>
-
         <div class="module-card">
             <div class="module-icon">🧪</div>
             <div class="module-title">Laboratory</div>
             <div class="module-description">Handle laboratory tests and records.</div>
-            <a href="laboratory.php" class="module-btn">Go to Module</a>
+            <a href="../laboratory/laboratory.php" class="module-btn">Go to Module</a>
         </div>
 
         <div class="module-card">
-            <div class="module-icon">💰</div>
-            <div class="module-title">Finance</div>
-            <div class="module-description">Track hospital financials.</div>
-            <a href="finance.php" class="module-btn">Go to Module</a>
+            <div class="module-icon">🧪</div>
+            <div class="module-title">Reception</div>
+            <div class="module-description">Handle laboratory tests and records.</div>
+            <a href="../laboratory/laboratory.php" class="module-btn">Go to Module</a>
         </div>
 
         <div class="module-card">
-            <div class="module-icon">📋</div>
-            <div class="module-title">Other Activities</div>
-            <div class="module-description">Manage miscellaneous activities.</div>
-            <a href="other_activities.php" class="module-btn">Go to Module</a>
+            <div class="module-icon">🧪</div>
+            <div class="module-title">Nurse</div>
+            <div class="module-description">Handle laboratory tests and records.</div>
+            <a href="../nurse/nurse_dashboard.php" class="module-btn">Go to Module</a>
         </div>
+
+       
+        <div class="module-card">
+            <div class="module-icon">🧪</div>
+            <div class="module-title">Laboratory</div>
+            <div class="module-description">Handle laboratory tests and records.</div>
+            <a href="../laboratory/laboratory.php" class="module-btn">Go to Module</a>
+        </div>
+
     </div>
 
-    <footer class="footer">
-        <p>&copy; 2024 Hospital Management System</p>
-    </footer>
 
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>

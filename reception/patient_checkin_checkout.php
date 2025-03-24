@@ -193,18 +193,7 @@ if (!$appointments) {
     </table>
 
     <!-- Appointments Table -->
-    <h4>All Appointments</h4>
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Patient Name</th>
-                <th>Doctor Name</th>
-                <th>Appointment Date</th>
-                <th>Appointment Time</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
+   
         <tbody>
             <?php while ($row = $appointments->fetch_assoc()): ?>
                 <tr>

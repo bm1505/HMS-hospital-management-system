@@ -30,7 +30,23 @@ $result = $conn->query($sql);
 $total_sales = 0;
 $total_profit = 0;
 
-// Close the database connection
+// Store all rows for display
+$medicines = [];
+
+if ($result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        $row['total_sales'] = $row['total_quantity_sold'] * $row['selling_price'];
+        $row['total_cost'] = $row['total_quantity_sold'] * $row['cost_price'];
+        $row['profit'] = $row['total_sales'] - $row['total_cost'];
+
+        $total_sales += $row['total_sales'];
+        $total_profit += $row['profit'];
+
+        $medicines[] = $row;
+    }
+}
+
+// Close the database connection (now correctly placed after processing)
 $conn->close();
 ?>
 
@@ -49,7 +65,6 @@ $conn->close();
             background-color: #e9f7ef;
             font-family: 'Arial', sans-serif;
         }
-
         .container {
             margin-top: 50px;
             background-color: #ffffff;
@@ -57,36 +72,57 @@ $conn->close();
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             padding: 20px;
         }
-
         h1 {
             font-size: 24px;
             color: #2c3e50;
             margin-bottom: 20px;
             text-align: center;
         }
-
         .table {
             margin-top: 20px;
         }
-
         .table thead {
             background-color: #3498db;
             color: white;
         }
-
         .table th, .table td {
             vertical-align: middle;
         }
-
         .total-row {
             font-weight: bold;
             background-color: #f8f9fa;
+        }
+        .profit-positive {
+            color: #28a745; /* Green for positive profit */
+        }
+        .profit-negative {
+            color: #dc3545; /* Red for negative profit */
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Profit Report</h1>
+        <h1><i class="fas fa-chart-line"></i> Profit Report</h1>
+
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card text-white bg-primary mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Sales</h5>
+                        <p class="card-text h4"><?= number_format($total_sales, 2) ?></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card text-white <?= ($total_profit >= 0) ? 'bg-success' : 'bg-danger' ?> mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Profit</h5>
+                        <p class="card-text h4"><?= number_format($total_profit, 2) ?></p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Medicines Sold Table -->
         <div class="table-responsive">
@@ -96,42 +132,36 @@ $conn->close();
                         <th>Medicine ID</th>
                         <th>Medicine Name</th>
                         <th>Quantity Sold</th>
-                        <th>Selling Price (per unit)</th>
-                        <th>Cost Price (per unit)</th>
+                        <th>Selling Price</th>
+                        <th>Cost Price</th>
                         <th>Total Sales</th>
-                        <th>Total Profit</th>
+                       
                     </tr>
                 </thead>
                 <tbody>
-                    <?php
-                    if ($result->num_rows > 0) {
-                        while ($row = $result->fetch_assoc()) {
-                            $total_sales_per_medicine = $row['total_quantity_sold'] * $row['selling_price'];
-                            $total_cost_per_medicine = $row['total_quantity_sold'] * $row['cost_price'];
-                            $profit_per_medicine = $total_sales_per_medicine - $total_cost_per_medicine;
-
-                            $total_sales += $total_sales_per_medicine;
-                            $total_profit += $profit_per_medicine;
-
-                            echo "<tr>";
-                            echo "<td>" . htmlspecialchars($row['medicine_id']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['medicine_name']) . "</td>";
-                            echo "<td>" . htmlspecialchars($row['total_quantity_sold']) . "</td>";
-                            echo "<td>" . number_format($row['selling_price'], 2) . "</td>";
-                            echo "<td>" . number_format($row['cost_price'], 2) . "</td>";
-                            echo "<td>" . number_format($total_sales_per_medicine, 2) . "</td>";
-                            echo "<td>" . number_format($profit_per_medicine, 2) . "</td>";
-                            echo "</tr>";
-                        }
-                    } else {
-                        echo "<tr><td colspan='7' class='text-center'>No medicines sold.</td></tr>";
-                    }
-                    ?>
+                    <?php if (!empty($medicines)): ?>
+                        <?php foreach ($medicines as $medicine): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($medicine['medicine_id']) ?></td>
+                                <td><?= htmlspecialchars($medicine['medicine_name']) ?></td>
+                                <td><?= htmlspecialchars($medicine['total_quantity_sold']) ?></td>
+                                <td><?= number_format($medicine['selling_price'], 2) ?></td>
+                                <td><?= number_format($medicine['cost_price'], 2) ?></td>
+                                <td><?= number_format($medicine['total_sales'], 2) ?></td>
+                               
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr><td colspan="7" class="text-center">No medicines sold.</td></tr>
+                    <?php endif; ?>
+                    
                     <!-- Total Row -->
                     <tr class="total-row">
-                        <td colspan="5"><strong>Total</strong></td>
+                        <td colspan="5"><strong>Grand Total</strong></td>
                         <td><strong><?= number_format($total_sales, 2) ?></strong></td>
-                        <td><strong><?= number_format($total_profit, 2) ?></strong></td>
+                        
+                            <strong><?= number_format($total_profit, 2) ?></strong>
+                        </td>
                     </tr>
                 </tbody>
             </table>

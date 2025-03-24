@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['toggle_status'])) {
     $status = $_POST['status'];
     $update = "UPDATE doctors SET status='$status' WHERE doctorID='$doctorID'";
     mysqli_query($conn, $update);
-    header("Location: doctor_dashboard.php");
+    header("Location: doctor.php");
     exit;
 }
 
